@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "470717283669",
+    "project_id": "procs-app",
+    "storage_bucket": "procs-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:470717283669:android:e2aef77f0c9811297ac3dc",
+        "android_client_info": {
+          "package_name": "com.example.procs_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBcj2Wgd_NZg7JcTDnLye7dzM6W7sOdAbk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

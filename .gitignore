@@ -1,0 +1,31 @@
+# Arquivos de configuração do Dart e Flutter
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+build/
+*.a
+*.o
+
+# Arquivos de configuração de IDEs (VS Code, Android Studio, IntelliJ)
+.idea/
+.vscode/
+*.iml
+
+# Arquivos sensíveis e de configuração local
+*.env
+/android/local.properties
+/ios/Pods/
+/ios/Flutter/Flutter.podspec
+/ios/Flutter/Generated.xcconfig
+/ios/Runner/GeneratedPluginRegistrant.h
+/ios/Runner/GeneratedPluginRegistrant.m
+/ios/Flutter/App.framework
+/ios/Flutter/engine.version
+/ios/.symlinks
+/ios/Flutter/flutter_export_environment.sh
+
+# NUNCA envie seus arquivos de configuração do Firebase para o público
+# Isso é crítico para a segurança.
+/ios/Runner/GoogleService-Info.plist
+android/google-services.json

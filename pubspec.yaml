@@ -1,0 +1,57 @@
+name: procs_ai
+description: Procs AI - Premium Health & Gamification.
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # ---
+  # FUNDAÇÃO V3.4 (Pós-Pivot)
+  # ---
+
+  # 1. Gerenciamento de Estado
+  provider: ^6.1.2
+
+  # 2. Backend (Firebase)
+  firebase_core: ^3.1.1
+  firebase_auth: ^5.1.1
+  cloud_firestore: ^5.0.2
+  firebase_messaging: ^15.0.2
+  firebase_analytics: ^11.1.0
+
+  # 3. Monetização
+  purchases_flutter: ^6.30.0 # (RevenueCat V3)
+
+  # 4. UI/UX (V3.1)
+  google_fonts: ^6.2.1
+  font_awesome_flutter: ^10.7.0
+  lottie: ^3.1.2 # (V3.1: Usado para Lottie.network())
+  
+  cupertino_icons: ^1.0.2
+
+  # ---
+  # HOTFIX V3.5 (Auth Foundation)
+  # ---
+  # 5. Auth Social V3
+  google_sign_in: ^6.2.1 
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
+
+  # ---
+  # V3.1 (Hotfix Lottie)
+  # (Removemos a dependência de 'assets/lottie/' V3.0)
+  # ---
+  assets:
+    - assets/images/hero_image.png
+    # (V3.1: A pasta 'assets/lottie/' foi REMOVIDA para corrigir o crash V3)
