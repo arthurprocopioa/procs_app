@@ -39,6 +39,7 @@ dependencies:
   # ---
   # 5. Auth Social V3
   google_sign_in: ^6.2.1 
+  sign_in_with_apple: ^6.1.0 # <-- PACOTE ADICIONADO AQUI
 
 dev_dependencies:
   flutter_test:
