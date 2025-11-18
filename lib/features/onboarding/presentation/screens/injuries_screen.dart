@@ -4,9 +4,11 @@ import 'cardio_screen.dart'; // Próxima tela (1.12)
 import '../../../../core/services/analytics_service.dart';
 import '../../../../core/services/haptic_service.dart';
 import '../../application/onboarding_provider.dart';
+// V3 (PONTO 7): Importando o novo card premium
+import '../widgets/premium_selection_card.dart';
 
 /// Tela 1.11: Onde o usuário informa sobre lesões (Lógica V3).
-/// Refatorada para usar a Fundação V3 e a lógica de "Data Ouro" (Texto Extenso).
+/// Refatorada para SPRINT 2 (Layout de Scroll) e SPRINT 3 (Premium Card)
 class InjuriesScreen extends StatefulWidget {
   const InjuriesScreen({super.key});
 
@@ -16,23 +18,19 @@ class InjuriesScreen extends StatefulWidget {
 
 class _InjuriesScreenState extends State<InjuriesScreen> {
   // --- ESTADO LOCAL (V3) ---
-
-  // 1. Controla a seleção primária (Sim/Não)
-  // (Mantém a lógica V1 de estado local para UI)
   bool? _hasInjury;
-
-  // 2. Controla o TextField "Data Ouro" (V3)
   late final TextEditingController _injuryController;
+
+  // V3 (PONTO 8a/13): Foco para o teclado
+  final FocusNode _injuryFocusNode = FocusNode();
 
   @override
   void initState() {
     super.initState();
-    // V3: Inicializa o estado local com os dados do Provider
     final providerData = context.read<OnboardingProvider>().data;
     _hasInjury = providerData.hasInjury;
     _injuryController = TextEditingController(text: providerData.injuryDetails);
 
-    // V3: Analytics
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<AnalyticsService>(context, listen: false)
           .trackScreenView('injuries');
@@ -42,26 +40,27 @@ class _InjuriesScreenState extends State<InjuriesScreen> {
   @override
   void dispose() {
     _injuryController.dispose();
+    _injuryFocusNode.dispose(); // V3: Limpa o foco
     super.dispose();
   }
 
   // --- AÇÕES V3 ---
 
   void _onNext() {
-    // Lógica V1 mantida: Só avança se a seleção primária estiver feita
     if (_hasInjury == null) return;
-
-    // V3: Haptics
     HapticService.mediumImpact();
 
-    // V3: Implementa o TODO (Salva o "Data Ouro")
+    // V3 (PONTO 8a): Se o teclado estiver aberto, feche-o
+    if (_injuryFocusNode.hasFocus) {
+      _injuryFocusNode.unfocus();
+    }
+
     final provider = context.read<OnboardingProvider>();
     provider.setInjuryData(
       hasInjury: _hasInjury!,
       details: _hasInjury == true ? _injuryController.text.trim() : null,
     );
 
-    // V3: Analytics
     context.read<AnalyticsService>().trackEvent(
       'onboarding_injury_set',
       parameters: {
@@ -71,7 +70,6 @@ class _InjuriesScreenState extends State<InjuriesScreen> {
       },
     );
 
-    // V3: Navegação
     Navigator.of(context).push(MaterialPageRoute(
       builder: (context) => const CardioScreen(), // Navega para 1.12
     ));
@@ -83,150 +81,119 @@ class _InjuriesScreenState extends State<InjuriesScreen> {
     final textTheme = theme.textTheme;
     final colorScheme = theme.colorScheme;
 
-    // Lógica V1 mantida
     final bool canContinue = _hasInjury != null;
     final bool showSubSelection = _hasInjury == true;
 
     return Scaffold(
       appBar: AppBar(
-        // V3: Título do AppBar (Usa o Tema V3)
-        title: Text(
-          "Etapa 8 de 13",
-          style: theme.appBarTheme.titleTextStyle,
-        ),
+        // V3 (PONTO 2): Texto "Etapa" removido
+        // V3 (PONTO 3): Barra de progresso será um novo widget (Tarefa 2.5)
+        title: null, // Removido
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(4.0),
           child: LinearProgressIndicator(
+            // Placeholder até Tarefa 2.5
             value: 8 / 13,
             backgroundColor: theme.colorScheme.surfaceContainer,
             valueColor: AlwaysStoppedAnimation<Color>(colorScheme.primary),
           ),
         ),
       ),
-      body: Column(
-        children: [
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const SizedBox(height: 16),
-                  // 4. Título (V3)
-                  Text(
-                    "Você tem algum histórico de lesão?",
-                    style: textTheme.headlineMedium,
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 32),
+      body:
+          // V3 (PONTO 8b & 15): Adiciona SingleChildScrollView para
+          // corrigir o overflow do teclado e o bug de zoom.
+          SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 24.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const SizedBox(height: 16),
+            Text(
+              "Você tem algum histórico de lesão?",
+              style: textTheme.headlineMedium,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 32),
 
-                  // 5. Parte 1: Seleção Primária (Sim/Não)
-                  // (Refatorado para o padrão V3 de UI 'Cards')
-                  _buildInjuryOptionCard('Sim', true),
-                  const SizedBox(height: 16),
-                  _buildInjuryOptionCard('Não', false),
+            // V3 (PONTO 7): Substituído pelo PremiumSelectionCard
+            PremiumSelectionCard(
+              text: 'Sim',
+              isSelected: _hasInjury == true,
+              onTap: () {
+                HapticService.lightImpact();
+                setState(() {
+                  _hasInjury = true;
+                });
+              },
+            ),
+            const SizedBox(height: 16),
+            PremiumSelectionCard(
+              text: 'Não',
+              isSelected: _hasInjury == false,
+              onTap: () {
+                HapticService.lightImpact();
+                setState(() {
+                  _hasInjury = false;
+                });
+                _injuryFocusNode
+                    .unfocus(); // Fecha o teclado se "Não" for selecionado
+              },
+            ),
 
-                  // 6. Parte 2: Sub-Seleção (Lógica V3 - "Data Ouro")
-                  AnimatedOpacity(
-                    opacity: showSubSelection ? 1.0 : 0.0,
-                    duration: const Duration(milliseconds: 300),
-                    child: Visibility(
-                      visible: showSubSelection,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const SizedBox(height: 40),
-                          // Subtítulo V3
-                          Text(
-                            "Por favor, descreva sua(s) lesão(ões)",
-                            style: textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            "Quanto mais detalhes (o que, quando, limitações), melhor a IA poderá adaptar seu treino.",
-                            style: textTheme.bodyMedium,
-                          ),
-                          const SizedBox(height: 16),
-
-                          // TextField V3 (Data Ouro)
-                          TextField(
-                            controller: _injuryController,
-                            decoration: const InputDecoration(
-                              labelText: 'Descreva sua lesão aqui...',
-                              // V3: Usa o Tema
-                            ),
-                            style: textTheme.bodyLarge,
-                            maxLines: 5, // Permite mais texto
-                          ),
-                        ],
+            // V3: Sub-Seleção (Textfield)
+            AnimatedOpacity(
+              opacity: showSubSelection ? 1.0 : 0.0,
+              duration: const Duration(milliseconds: 300),
+              // V3: Otimização para só construir o TextField se for visível
+              child: Visibility(
+                visible: showSubSelection,
+                maintainState: true, // Mantém o estado do controller
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 40),
+                    Text(
+                      "Por favor, descreva sua(s) lesão(ões)",
+                      style: textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 96), // Espaço para o botão
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-      // 7. Botão de Ação (Inferior Fixo - V3 UI)
-      bottomNavigationBar: Padding(
-        padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
-        child: ElevatedButton(
-          onPressed: canContinue ? _onNext : null,
-          child: const Text('Continuar'),
-        ),
-      ),
-    );
-  }
+                    const SizedBox(height: 8),
+                    Text(
+                      "Quanto mais detalhes (o que, quando, limitações), melhor a IA poderá adaptar seu treino.",
+                      style: textTheme.bodyMedium,
+                    ),
+                    const SizedBox(height: 16),
 
-  /// Helper V3: Constrói os cards de seleção (Sim/Não)
-  Widget _buildInjuryOptionCard(String text, bool value) {
-    final theme = Theme.of(context);
-    final bool isSelected = _hasInjury == value;
-
-    // V3: Estilo V3 (Baseado no `schedule_screen`)
-    final Color bgColor =
-        isSelected ? const Color(0xFF303030) : theme.cardTheme.color!;
-
-    final Color fgColor =
-        isSelected ? Colors.white : theme.colorScheme.onSurface;
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6.0),
-      child: InkWell(
-        onTap: () {
-          // V3: Haptics
-          HapticService.lightImpact();
-          setState(() {
-            _hasInjury = value;
-          });
-        },
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-          decoration: BoxDecoration(
-            color: bgColor,
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                text,
-                style: theme.textTheme.bodyLarge?.copyWith(
-                  color: fgColor,
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                    // V3 (PONTO 8a & 13): Corrigido
+                    TextField(
+                      controller: _injuryController,
+                      focusNode: _injuryFocusNode, // V3: Controla o foco
+                      decoration: const InputDecoration(
+                        labelText: 'Descreva sua lesão aqui...',
+                      ),
+                      style: textTheme.bodyLarge,
+                      maxLines: 5,
+                      // V3 (PONTO 8a): Permite nova linha
+                      textCapitalization: TextCapitalization.sentences,
+                      textInputAction: TextInputAction.newline,
+                    ),
+                  ],
                 ),
               ),
-              if (isSelected)
-                const Icon(Icons.check_circle, color: Colors.white, size: 20),
-            ],
-          ),
+            ),
+            const SizedBox(height: 40), // Espaço antes do botão
+
+            // V3 (PONTO 8b): Botão movido para dentro do Scroll
+            ElevatedButton(
+              onPressed: canContinue ? _onNext : null,
+              child: const Text('Continuar'),
+            ),
+            const SizedBox(height: 40), // Espaço para fim do scroll
+          ],
         ),
       ),
+      // V3 (PONTO 8b): bottomNavigationBar removido
     );
   }
 }

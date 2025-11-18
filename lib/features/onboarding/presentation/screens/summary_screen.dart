@@ -1,29 +1,33 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'notifications_screen.dart'; // 1. CORREÇÃO V3 (Navega para 1.20)
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'notifications_screen.dart'; // Próxima tela
 
 // ---
-// IMPORTS V3 (Fundação)
+// IMPORTS V3 (Fundação e Novos Widgets)
 // ---
 import '../../../../core/services/analytics_service.dart';
 import '../../../../core/services/haptic_service.dart';
 import '../../application/onboarding_provider.dart';
 import '../../domain/onboarding_data_model.dart';
+import '../widgets/premium_selection_card.dart'; // V3 (PONTO 14)
+import '../widgets/premium_progress_bar.dart'; // V3 (PONTO 3)
 
 // ---
-// IMPORTS V3 (Telas de Edição)
+// IMPORTS V3 (Telas de Edição - PONTO 14)
+// (Usaremos os widgets *destas* telas nos modais)
 // ---
 import 'vital_data_screen.dart'; // Para Idade, Peso, Gênero
 import 'objective_screen.dart'; // Para Objetivo
 import 'experience_screen.dart'; // Para Nível Físico
-// Para Cardio
-import 'injuries_screen.dart'; // Para Lesões
-// Para Meta de Peso
 import 'schedule_screen.dart'; // Para Frequência
 import 'equipment_screen.dart'; // Para Local
+import 'injuries_screen.dart'; // Para Lesões
+import 'cardio_screen.dart'; // Para Cardio
 
 /// Tela 1.19: O "Hub de Revisão" V3 (Lógica V3).
-/// (Descarta 100% o V1 Estático)
+/// V3 (SPRINT 2/3): Refatorada para corrigir erros de compilação
+/// e implementar a edição em Modal (PONTO 14).
 class SummaryScreen extends StatefulWidget {
   const SummaryScreen({super.key});
 
@@ -35,50 +39,102 @@ class _SummaryScreenState extends State<SummaryScreen> {
   @override
   void initState() {
     super.initState();
-    // V3: Analytics
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<AnalyticsService>(context, listen: false)
           .trackScreenView('summary');
     });
   }
 
-  /// V3: Helper de Navegação (Lógica de Edição)
-  void _navigateTo(BuildContext context, Widget screen) {
-    // V3: Haptics
+  // ---
+  // V3 (PONTO 14): NOVA LÓGICA DE EDIÇÃO EM MODAL
+  // ---
+  Future<void> _showEditModal(BuildContext context,
+      {required String title, required Widget child}) async {
     HapticService.lightImpact();
 
-    // V3: Analytics (Qual item o usuário quer editar?)
-    context.read<AnalyticsService>().trackEvent(
-      'summary_edit_tap',
-      parameters: {'edit_screen': screen.runtimeType.toString()},
-    );
-
-    // V3: Navega (push), permitindo que o usuário volte (pop)
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (context) => screen),
+    // V3 (PONTO 18): Reutiliza o estilo do modal de 'vital_data_screen'
+    final theme = Theme.of(context);
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: theme.colorScheme.surfaceContainer,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (modalContext) {
+        // Usa StatefulBuilder para que o modal possa ter seu próprio estado
+        // (ex: para o editor de texto de lesões)
+        return StatefulBuilder(
+          builder: (stfContext, stfSetState) {
+            return Container(
+              // Altura dinâmica baseada no conteúdo
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(context).size.height * 0.7,
+              ),
+              padding: const EdgeInsets.only(top: 8),
+              child: Column(
+                mainAxisSize: MainAxisSize.min, // Encolhe para o conteúdo
+                children: [
+                  // Header do Modal (Título e Botão "OK")
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 20, 24, 10),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(title, style: theme.textTheme.headlineSmall),
+                        GestureDetector(
+                          onTap: () {
+                            HapticService.lightImpact();
+                            Navigator.of(modalContext).pop();
+                          },
+                          child: Text(
+                            "OK", // V3 (PONTO 18b)
+                            style: theme.textTheme.bodyLarge?.copyWith(
+                              color: theme.colorScheme.primary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // V3 (PONTO 15): Garante que o conteúdo do modal seja rolável
+                  Flexible(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.fromLTRB(24, 16, 24, 40),
+                      // V3: Passa o 'stfSetState' para os editores que precisam
+                      // (como o editor de texto de lesões)
+                      child: Provider.value(
+                        value: context.read<OnboardingProvider>(),
+                        child: child,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
     );
   }
 
-  /// V3: Helper de Navegação FINAL
+  /// V3: Navegação FINAL
   void _onNext(BuildContext context) {
-    // V3: Haptics
     HapticService.mediumImpact();
-
-    // V3: Analytics
     context
         .read<AnalyticsService>()
         .trackEvent('summary_continue_to_notifications');
 
-    // 2. CORREÇÃO V3 (Navega para 1.20)
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => const NotificationsScreen(),
+        builder: (context) => const NotificationsScreen(), // 1.20
       ),
     );
   }
 
   // ---
-  // V3: Helpers de Formatação (Para "Data Gold" da IA)
+  // V3: Helpers de Formatação (CORRIGIDOS para o Sprint 1)
   // ---
   String _formatObjective(String? key) {
     const map = {
@@ -112,21 +168,37 @@ class _SummaryScreenState extends State<SummaryScreen> {
     return map[key] ?? 'N/D';
   }
 
+  // V3 (CORRIGIDO - Ponto 6)
   String _formatSchedule(OnboardingDataModel data) {
-    if (data.schedulingMode == 'fixed') {
-      return "${data.fixedDays.length} dias (Fixo)";
+    if (data.scheduleMode == 'days_of_week') {
+      return "${data.scheduleDaysOfWeek.length} dias (Fixo)";
     }
-    return "${data.smartFrequency ?? 'N/D'} dias (Smart)";
+    if (data.scheduleMode == 'times_per_week') {
+      return "${data.scheduleTimesPerWeek ?? 'N/D'} vezes (Smart)";
+    }
+    return 'N/D';
   }
 
   String _formatInjury(bool hasInjury) {
     return hasInjury ? 'Sim (Detalhado)' : 'Sem lesões';
   }
 
+  // V3 (NOVO - Ponto 9)
+  String _formatCardio(OnboardingDataModel data) {
+    switch (data.cardioPreference) {
+      case 'sim':
+        return data.cardioType ?? 'N/D';
+      case 'nao':
+        return 'Não';
+      case 'ia_decide':
+        return 'IA Decide';
+      default:
+        return 'N/D';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     // V3: Lógica 1 (Dados Reais)
     return Consumer<OnboardingProvider>(
       builder: (context, provider, child) {
@@ -134,50 +206,42 @@ class _SummaryScreenState extends State<SummaryScreen> {
         final name = data.name ?? "Viajante";
 
         return Scaffold(
-          // 1. AppBar V3 (Sem progresso, V1 mantido)
           appBar: AppBar(
             backgroundColor: Colors.transparent,
             elevation: 0,
             leading: Navigator.canPop(context) ? const BackButton() : null,
           ),
-          body: Column(
-            children: [
-              Expanded(
-                child: SingleChildScrollView(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      // 2. Header V3 (Baseado na Referência V3)
-                      _Header(name: name),
+          // V3 (PONTO 15): Adiciona SingleChildScrollView
+          body: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _Header(name: name),
+                _SummaryCard(
+                  data: data,
+                  onNavigate: _showEditModal,
+                  // Passa os formatters V3
+                  formatObjective: _formatObjective,
+                  formatExperience: _formatExperience,
+                  formatGender: _formatGender,
+                  formatEquipment: _formatEquipment,
+                  formatSchedule: _formatSchedule,
+                  formatInjury: _formatInjury,
+                  formatCardio: _formatCardio, // V3: Novo
+                ),
+                _PersonalizedSection(),
 
-                      // 3. O "Hub" V3 (Lógica 2: Edição)
-                      _SummaryCard(
-                        data: data,
-                        onNavigate: _navigateTo,
-                        // Passa os formatters V3
-                        formatObjective: _formatObjective,
-                        formatExperience: _formatExperience,
-                        formatGender: _formatGender,
-                        formatEquipment: _formatEquipment,
-                        formatSchedule: _formatSchedule,
-                        formatInjury: _formatInjury,
-                      ),
-
-                      // 4. Seção "Personalizado" (UI V3 da Referência)
-                      _PersonalizedSection(theme: theme),
-                    ],
+                const SizedBox(height: 40),
+                // V3 (PONTO 15): Botão dentro do scroll
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                  child: ElevatedButton(
+                    onPressed: () => _onNext(context),
+                    child: const Text('Confirmar e Continuar'),
                   ),
                 ),
-              ),
-            ],
-          ),
-          // 3. CORREÇÃO V3 (Layout V3 Padrão)
-          // (Botão no Bottom, não na imagem)
-          bottomNavigationBar: Padding(
-            padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
-            child: ElevatedButton(
-              onPressed: () => _onNext(context),
-              child: const Text('Confirmar e Continuar'),
+                const SizedBox(height: 40),
+              ],
             ),
           ),
         );
@@ -187,7 +251,7 @@ class _SummaryScreenState extends State<SummaryScreen> {
 }
 
 // ---
-// V3: Widgets Helpers (Criados do Zero)
+// V3: Widgets Helpers (Layout)
 // ---
 
 /// V3: O Título (Ex: "Arthur, seu plano está pronto!")
@@ -201,17 +265,17 @@ class _Header extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 24.0),
       child: Text(
         "$name, seu plano está pronto!",
-        // V3: Tema
         style: Theme.of(context).textTheme.displayLarge,
       ),
     );
   }
 }
 
-/// V3: O Card "É tudo sobre você" (O Hub Interativo)
+/// V3 (CORRIGIDO): O Card "É tudo sobre você" (O Hub Interativo)
 class _SummaryCard extends StatelessWidget {
   final OnboardingDataModel data;
-  final Function(BuildContext, Widget) onNavigate;
+  final Function(BuildContext, {required String title, required Widget child})
+      onNavigate;
   // Formatters
   final String Function(String?) formatObjective;
   final String Function(String?) formatExperience;
@@ -219,6 +283,7 @@ class _SummaryCard extends StatelessWidget {
   final String Function(String?) formatEquipment;
   final String Function(OnboardingDataModel) formatSchedule;
   final String Function(bool) formatInjury;
+  final String Function(OnboardingDataModel) formatCardio; // V3 (NOVO)
 
   const _SummaryCard({
     required this.data,
@@ -229,92 +294,182 @@ class _SummaryCard extends StatelessWidget {
     required this.formatEquipment,
     required this.formatSchedule,
     required this.formatInjury,
+    required this.formatCardio, // V3 (NOVO)
   });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final provider = context.read<OnboardingProvider>(); // Para os editores
 
     return Container(
       padding: const EdgeInsets.all(24.0),
       margin: const EdgeInsets.fromLTRB(24.0, 24.0, 24.0, 0),
-      // V3: Tema (Usa o CardTheme V3)
       decoration: BoxDecoration(
         color: theme.cardTheme.color,
-        borderRadius: BorderRadius.circular(20), // V3: Mais arredondado
+        borderRadius: BorderRadius.circular(20),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             "É tudo sobre você",
-            // V3: Tema
             style: theme.textTheme.headlineSmall,
           ),
           const SizedBox(height: 24),
-
-          // V3: Grid 2xN (Baseado na Referência V3)
           GridView.count(
             crossAxisCount: 2,
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            childAspectRatio: 2.5, // Ajusta a altura
+            childAspectRatio: 2.5,
             mainAxisSpacing: 16,
             crossAxisSpacing: 16,
             children: [
-              // V3: Lógica de Edição (Item 1)
+              // V3 (PONTO 14): Lógica de Edição em Modal
               _SummaryItem(
                 title: 'Objetivo',
                 value: formatObjective(data.objective),
-                onTap: () => onNavigate(context, const ObjectiveScreen()),
+                onTap: () => onNavigate(context,
+                    title: "Editar Objetivo",
+                    child: _buildObjectiveEditor(provider)),
               ),
-              // V3: Lógica de Edição (Item 2)
-              _SummaryItem(
-                title: 'Idade',
-                value: "${data.age ?? 'N/D'} anos",
-                onTap: () => onNavigate(context, const VitalDataScreen()),
-              ),
-              // V3: Lógica de Edição (Item 3)
               _SummaryItem(
                 title: 'Nível Físico',
                 value: formatExperience(data.experienceLevel),
-                onTap: () => onNavigate(context, const ExperienceScreen()),
+                onTap: () => onNavigate(context,
+                    title: "Editar Nível",
+                    child: _buildExperienceEditor(provider)),
               ),
-              // V3: Lógica de Edição (Item 4)
               _SummaryItem(
-                title: 'Gênero',
-                value: formatGender(data.gender),
-                onTap: () => onNavigate(context, const VitalDataScreen()),
+                title: 'Agenda', // V3 (CORRIGIDO)
+                value: formatSchedule(data),
+                onTap: () => onNavigate(context,
+                    title: "Editar Agenda",
+                    child: _buildScheduleEditor(provider)),
               ),
-              // V3: Lógica de Edição (Item 5)
               _SummaryItem(
-                title: 'Peso Atual',
-                value: "${data.currentWeight?.toStringAsFixed(1) ?? 'N/D'} kg",
-                onTap: () => onNavigate(context, const VitalDataScreen()),
+                title: 'Cardio', // V3 (CORRIGIDO)
+                value: formatCardio(data),
+                onTap: () => onNavigate(context,
+                    title: "Editar Cardio",
+                    child: _buildCardioEditor(provider)),
               ),
-              // V3: Lógica de Edição (Item 6)
               _SummaryItem(
                 title: 'Equipamento',
                 value: formatEquipment(data.equipmentLocation),
-                onTap: () => onNavigate(context, const EquipmentScreen()),
+                onTap: () => onNavigate(context,
+                    title: "Editar Equipamento",
+                    child: _buildEquipmentEditor(provider)),
               ),
-              // V3: Lógica de Edição (Item 7)
-              _SummaryItem(
-                title: 'Frequência',
-                value: formatSchedule(data),
-                onTap: () => onNavigate(context, const ScheduleScreen()),
-              ),
-              // V3: Lógica de Edição (Item 8)
               _SummaryItem(
                 title: 'Lesões',
                 value: formatInjury(data.hasInjury),
-                onTap: () => onNavigate(context, const InjuriesScreen()),
+                onTap: () => onNavigate(context,
+                    title: "Editar Lesões",
+                    child: _buildInjuriesEditor(provider)),
+              ),
+              _SummaryItem(
+                title: 'Peso Atual',
+                value: "${data.currentWeight?.toStringAsFixed(1) ?? 'N/D'} kg",
+                onTap: () => onNavigate(context,
+                    title: "Editar Peso",
+                    child: _buildVitalsEditor(provider, 'weight')),
+              ),
+              _SummaryItem(
+                title: 'Gênero',
+                value: formatGender(data.gender),
+                onTap: () => onNavigate(context,
+                    title: "Editar Gênero",
+                    child: _buildVitalsEditor(provider, 'gender')),
               ),
             ],
           ),
         ],
       ),
     );
+  }
+
+  // ---
+  // V3 (PONTO 14): WIDGETS DE EDIÇÃO PARA OS MODAIS
+  // ---
+
+  // Editor de Objetivo
+  Widget _buildObjectiveEditor(OnboardingProvider provider) {
+    return Column(
+      children: [
+        PremiumSelectionCard(
+          text: 'Perder Gordura',
+          isSelected: provider.data.objective == 'perder_gordura',
+          onTap: () => provider.setObjective('perder_gordura'),
+        ),
+        const SizedBox(height: 12),
+        PremiumSelectionCard(
+          text: 'Manter/Saúde',
+          isSelected: provider.data.objective == 'manter_saude',
+          onTap: () => provider.setObjective('manter_saude'),
+        ),
+        const SizedBox(height: 12),
+        PremiumSelectionCard(
+          text: 'Ganhar Músculo',
+          isSelected: provider.data.objective == 'ganhar_musculo',
+          onTap: () => provider.setObjective('ganhar_musculo'),
+        ),
+      ],
+    );
+  }
+
+  // Editor de Experiência
+  Widget _buildExperienceEditor(OnboardingProvider provider) {
+    return Column(
+      children: [
+        PremiumSelectionCard(
+          text: 'Sou novo no fitness',
+          isSelected: provider.data.experienceLevel == 'iniciante',
+          onTap: () => provider.setExperienceLevel('iniciante'),
+        ),
+        const SizedBox(height: 12),
+        PremiumSelectionCard(
+          text: 'Eu malho de vez em quando',
+          isSelected: provider.data.experienceLevel == 'intermediario',
+          onTap: () => provider.setExperienceLevel('intermediario'),
+        ),
+        const SizedBox(height: 12),
+        PremiumSelectionCard(
+          text: 'Eu me exercito regularmente',
+          isSelected: provider.data.experienceLevel == 'avancado',
+          onTap: () => provider.setExperienceLevel('avancado'),
+        ),
+      ],
+    );
+  }
+
+  // V3: Os editores de Agenda e Cardio são complexos,
+  // então eles precisam ser StatefulWidgets
+  Widget _buildScheduleEditor(OnboardingProvider provider) {
+    // Reutiliza a tela original como um widget
+    return const ScheduleScreen();
+  }
+
+  Widget _buildCardioEditor(OnboardingProvider provider) {
+    // Reutiliza a tela original como um widget
+    return const CardioScreen();
+  }
+
+  Widget _buildEquipmentEditor(OnboardingProvider provider) {
+    // Reutiliza a tela original como um widget
+    return const EquipmentScreen();
+  }
+
+  Widget _buildInjuriesEditor(OnboardingProvider provider) {
+    // Reutiliza a tela original como um widget
+    return const InjuriesScreen();
+  }
+
+  Widget _buildVitalsEditor(OnboardingProvider provider, String vital) {
+    // Reutiliza a tela original como um widget
+    // Idealmente, criaríamos pickers aqui, mas por simplicidade,
+    // reutilizar a tela inteira é o mais rápido.
+    return const VitalDataScreen();
   }
 }
 
@@ -333,26 +488,23 @@ class _SummaryItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-
-    // V3: Lógica 2 (Edição)
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(8),
       child: Padding(
         padding: const EdgeInsets.all(4.0),
         child: Column(
+          // V3 (PONTO 5): Alinhado à esquerda
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
               title,
-              // V3: Tema (Cor Secundária)
               style: theme.textTheme.bodyMedium,
             ),
             const SizedBox(height: 4),
             Text(
               value,
-              // V3: Tema (Cor Primária)
               style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
@@ -368,14 +520,11 @@ class _SummaryItem extends StatelessWidget {
 
 /// V3: A Seção "Personalizado" (UI da Referência V3)
 class _PersonalizedSection extends StatelessWidget {
-  final ThemeData theme;
-
-  const _PersonalizedSection({required this.theme});
-
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 32, 24, 48),
+      padding: const EdgeInsets.fromLTRB(24, 32, 24, 0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -384,10 +533,8 @@ class _PersonalizedSection extends StatelessWidget {
             style: theme.textTheme.headlineSmall,
           ),
           const SizedBox(height: 16),
-          // V3: Stack (Imagem)
           Stack(
             children: [
-              // V3: Imagem (Usando o 'hero_image.png' V1 como placeholder)
               ClipRRect(
                 borderRadius: BorderRadius.circular(20),
                 child: Image.asset(
@@ -395,9 +542,6 @@ class _PersonalizedSection extends StatelessWidget {
                   height: 250,
                   width: double.infinity,
                   fit: BoxFit.cover,
-                  // V3: Fade (Opcional, pois o botão saiu)
-                  // color: Colors.black.withOpacity(0.1),
-                  // colorBlendMode: BlendMode.darken,
                 ),
               ),
             ],

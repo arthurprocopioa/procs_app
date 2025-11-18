@@ -1,49 +1,34 @@
 import 'package:flutter/foundation.dart';
-// V3.1.14 (REMOVIDO):
-// import 'package:firebase_auth/firebase_auth.dart';
 import '../domain/onboarding_data_model.dart';
 
-/// V3.1.14: Provider (O "Entrevistador" Imutável)
-/// Gerencia o OnboardingDataModel como "Memória RAM" V3
-///
-/// V3.1.14: Revertido para "Guest-first" (V3.1.7) (sem UserCredential),
-/// mas mantendo o 'setName' (V3.1.14) para a nova NameScreen (V3.1.13).
+/// V3 (SPRINT 1): Provider (O "Entrevistador" Imutável)
+/// Refatorado para Agenda (Ponto 6) e Cardio (Ponto 9)
 class OnboardingProvider extends ChangeNotifier {
-  // O "Formulário" (Data Model) que o "EntrevistLdor" gerencia
   OnboardingDataModel _data = const OnboardingDataModel();
-
-  /// Expõe o Data Model (Formulário) de forma pública (Read-Only)
   OnboardingDataModel get data => _data;
 
   // ---
   // SETTERS V3 (Imutáveis: usam copyWith)
   // ---
 
-  // V3.1.14 (REMOVIDO):
-  // void setUserCredential(UserCredential credential) {
-  //   ...
-  //
-
-  // ---
-  // V3.1.14 (MANTIDO E CORRIGIDO): O MÉTODO QUE VOCÊ PRECISA
-  // ---
-  /// V3.1.14 (Handoff V3.1.13)
-  /// Salva o nome do usuário (capturado do TextField V3.1.13)
-  /// na "Memória RAM" V3.
-  void setName(String? name) {
-    if (_data.name == name) return;
-    _data = _data.copyWith(name: name);
-
-    // V3.1.14 (FIX): O Handoff V3.1.1 (Auth-first) não notificava,
-    // pois o V3.1.1 (setUserCredential) o fazia.
-    // O Handoff V3.1.14 (Guest-first) DEVE notificar, pois é uma ação V3.1.14 única.
-    notifyListeners();
-  }
-
   // (Tela 1.2)
   void setTermsAccepted(bool accepted) {
     if (_data.termsAccepted == accepted) return;
     _data = _data.copyWith(termsAccepted: accepted);
+    notifyListeners();
+  }
+
+  // V3 (Ponto 15 - Terms Screen)
+  void setHealthDataAccepted(bool accepted) {
+    if (_data.healthDataAccepted == accepted) return;
+    _data = _data.copyWith(healthDataAccepted: accepted);
+    notifyListeners();
+  }
+
+  // (Tela 1.2.1 - Name)
+  void setName(String? name) {
+    if (_data.name == name) return;
+    _data = _data.copyWith(name: name);
     notifyListeners();
   }
 
@@ -60,10 +45,6 @@ class OnboardingProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ---
-  // V3: CORREÇÃO DO BUG (image_a1f41f.png)
-  // Renomeado de 'setWeight' (V1) para 'setCurrentWeight' (V3)
-  // ---
   void setCurrentWeight(double weight) {
     if (_data.currentWeight == weight) return;
     _data = _data.copyWith(currentWeight: weight);
@@ -97,34 +78,37 @@ class OnboardingProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // (Tela 1.7 - Schedule)
-  void setSchedulingMode(String mode) {
-    if (mode != 'smart' && mode != 'fixed') return;
-    if (_data.schedulingMode == mode) return;
-    _data = _data.copyWith(schedulingMode: mode);
-    notifyListeners();
-  }
-
-  void setSmartFrequency(int? frequency) {
-    if (_data.smartFrequency == frequency) return;
+  // ---
+  // V3 (Ref. Ponto 6 - Agenda): Setters da Agenda
+  // ---
+  void setScheduleMode(String mode) {
+    // mode: 'days_of_week' ou 'times_per_week'
+    if (_data.scheduleMode == mode) return;
     _data = _data.copyWith(
-      smartFrequency: frequency,
-      fixedDays: const <String>{}, // Reseta o outro
+      scheduleMode: mode,
+      // Reseta a outra opção ao trocar o modo
+      scheduleDaysOfWeek:
+          mode == 'days_of_week' ? _data.scheduleDaysOfWeek : const <String>{},
+      scheduleTimesPerWeek:
+          mode == 'times_per_week' ? _data.scheduleTimesPerWeek : null,
     );
     notifyListeners();
   }
 
-  void toggleFixedDay(String dayKey) {
-    final newDays = Set<String>.from(_data.fixedDays);
+  void toggleScheduleDay(String dayKey) {
+    final newDays = Set<String>.from(_data.scheduleDaysOfWeek);
     if (newDays.contains(dayKey)) {
       newDays.remove(dayKey);
     } else {
       newDays.add(dayKey);
     }
-    _data = _data.copyWith(
-      fixedDays: newDays,
-      smartFrequency: null, // Reseta o outro
-    );
+    _data = _data.copyWith(scheduleDaysOfWeek: newDays);
+    notifyListeners();
+  }
+
+  void setScheduleTimesPerWeek(int? times) {
+    if (_data.scheduleTimesPerWeek == times) return;
+    _data = _data.copyWith(scheduleTimesPerWeek: times);
     notifyListeners();
   }
 
@@ -162,9 +146,6 @@ class OnboardingProvider extends ChangeNotifier {
   // (Tela 1.10 - Focus Area)
   void toggleFocusArea(String areaKey) {
     final newAreas = Set<String>.from(_data.focusAreas);
-
-    // Lógica V3: Se 'Corpo Inteiro' for selecionado, limpa os outros.
-    // Se outro for selecionado, limpa 'Corpo Inteiro'.
     if (areaKey == 'full_body') {
       if (newAreas.contains(areaKey)) {
         newAreas.clear();
@@ -173,7 +154,7 @@ class OnboardingProvider extends ChangeNotifier {
         newAreas.add(areaKey);
       }
     } else {
-      newAreas.remove('full_body'); // Remove 'Corpo Inteiro'
+      newAreas.remove('full_body');
       if (newAreas.contains(areaKey)) {
         newAreas.remove(areaKey);
       } else {
@@ -190,30 +171,89 @@ class OnboardingProvider extends ChangeNotifier {
     if (_data.hasInjury == hasInjury && _data.injuryDetails == injuryDetails) {
       return;
     }
-
     _data = _data.copyWith(
       hasInjury: hasInjury,
       injuryDetails: injuryDetails,
     );
-    notifyListeners(); // Notifica no 'onNext' da tela
+    notifyListeners();
   }
 
-  // (Tela 1.12 - Cardio)
-  void setCardioData({required String preference, String? schedule}) {
-    final String? cardioSchedule = (preference == 'sim') ? schedule : null;
-    if (_data.cardioPreference == preference &&
-        _data.cardioSchedule == cardioSchedule) {
-      return;
-    }
+  // ---
+  // V3 (Ref. Ponto 9 - Cardio): Setters do Cardio
+  // ---
+  void setCardioPreference(String preference) {
+    // preference: 'sim', 'nao', 'ia_decide'
+    if (_data.cardioPreference == preference) return;
 
+    // Reseta todo o sub-fluxo de cardio se a preferência principal mudar
     _data = _data.copyWith(
       cardioPreference: preference,
-      cardioSchedule: cardioSchedule,
+      cardioType: null,
+      cardioOtherDetail: null,
+      cardioScheduleMode: null,
+      cardioDaysOfWeek: const <String>{},
+      cardioTimesPerWeek: null,
     );
     notifyListeners();
   }
 
-  // (Tela 1.14 - Dieta)
+  void setCardioType(String type, {String? otherDetail}) {
+    // type: 'corrida', 'natacao', 'outros'
+    // otherDetail: "Dança"
+    _data = _data.copyWith(
+      cardioType: type,
+      cardioOtherDetail: (type == 'outros') ? otherDetail : null,
+    );
+    notifyListeners();
+  }
+
+  void setCardioScheduleMode(String mode) {
+    // mode: 'on_days', 'days_of_week', 'times_per_week'
+    if (_data.cardioScheduleMode == mode) return;
+    _data = _data.copyWith(
+      cardioScheduleMode: mode,
+      // Reseta as outras opções ao trocar o modo
+      cardioDaysOfWeek:
+          mode == 'days_of_week' ? _data.cardioDaysOfWeek : const <String>{},
+      cardioTimesPerWeek:
+          mode == 'times_per_week' ? _data.cardioTimesPerWeek : null,
+    );
+    notifyListeners();
+  }
+
+  void toggleCardioDay(String dayKey) {
+    final newDays = Set<String>.from(_data.cardioDaysOfWeek);
+    if (newDays.contains(dayKey)) {
+      newDays.remove(dayKey);
+    } else {
+      newDays.add(dayKey);
+    }
+    _data = _data.copyWith(cardioDaysOfWeek: newDays);
+    notifyListeners();
+  }
+
+  void setCardioTimesPerWeek(int? times) {
+    if (_data.cardioTimesPerWeek == times) return;
+    _data = _data.copyWith(cardioTimesPerWeek: times);
+    notifyListeners();
+  }
+
+  // ---
+  // V3 (Ref. Ponto 11 - Dieta): Setters da Dieta
+  // ---
+  void setDietHasNoRestrictions(bool hasNoRestrictions) {
+    if (_data.dietHasNoRestrictions == hasNoRestrictions) return;
+    _data = _data.copyWith(
+      dietHasNoRestrictions: hasNoRestrictions,
+      // Se "Não tenho" for true, limpa as restrições
+      dietRestrictions:
+          hasNoRestrictions ? const <String>{} : _data.dietRestrictions,
+      dietOtherRestriction:
+          hasNoRestrictions ? null : _data.dietOtherRestriction,
+    );
+    notifyListeners();
+  }
+
   void toggleDietRestriction(String restrictionKey) {
     final newRestrictions = Set<String>.from(_data.dietRestrictions);
     if (newRestrictions.contains(restrictionKey)) {
@@ -221,7 +261,18 @@ class OnboardingProvider extends ChangeNotifier {
     } else {
       newRestrictions.add(restrictionKey);
     }
-    _data = _data.copyWith(dietRestrictions: newRestrictions);
+    _data = _data.copyWith(
+      dietRestrictions: newRestrictions,
+      dietHasNoRestrictions: false, // Se marcar algo, "Não tenho" é falso
+    );
+    notifyListeners();
+  }
+
+  void setDietOtherRestriction(String? text) {
+    _data = _data.copyWith(
+      dietOtherRestriction: text,
+      dietHasNoRestrictions: false, // Se digitar algo, "Não tenho" é falso
+    );
     notifyListeners();
   }
 

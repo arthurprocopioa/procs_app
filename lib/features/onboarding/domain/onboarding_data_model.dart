@@ -1,25 +1,15 @@
-// V3.1.15 (A CORREÇÃO):
-// O Handoff V3.1.14 (anterior) tinha 'package:/flutter...'.
-// O Handoff V3.1.15 (corrigido) remove a barra '/'.
-import 'package:flutter/foundation.dart';
-// V3.1.14 (REMOVIDO): O UserCredential (V3.1.1) não é mais necessário no
-// fluxo "Guest-first" (V3.1.7).
-// import 'package:firebase_auth/firebase_auth.dart';
+// V3 (SPRINT 1): Refatorado para Agenda (Ponto 6) e Cardio (Ponto 9)
+// ignore_for_file: prefer_const_constructors_in_immutables
 
-/// V3.1.14: O Formulário (Data Model "Burro")
-/// (lib/features/onboarding/domain/onboarding_data_model.dart)
-///
-/// V3.1.14: Revertido para "Guest-first" (V3.1.7) (sem UserCredential),
-/// mas mantendo o 'name' (V3.1.14) para a nova NameScreen (V3.1.13).
+import 'package:flutter/foundation.dart';
+
 @immutable
 class OnboardingDataModel {
-  // V3.1.14 (REMOVIDO):
-  // final UserCredential? userCredential;
-
   // Módulo 1: Acesso (Telas 1.1 - 1.2)
-  // V3.1.14 (MANTIDO): O 'name' (V3.1.13) é capturado na NameScreen.
   final String? name;
   final bool termsAccepted;
+  // V3 (Ponto 15 - Terms Screen): Adicionado para UX do Zing
+  final bool healthDataAccepted;
 
   // Módulo 2.1: Dados Vitais (Tela 1.3)
   final int? age;
@@ -31,20 +21,34 @@ class OnboardingDataModel {
   final String? objective;
   final double? targetWeight;
   final String? experienceLevel;
-  final String schedulingMode;
-  final int? smartFrequency;
-  final Set<String> fixedDays;
+
+  // V3 (Ref. Ponto 6 - Agenda): Lógica de Agenda Refatorada
+  final String? scheduleMode; // 'days_of_week' ou 'times_per_week'
+  final Set<String> scheduleDaysOfWeek;
+  final int? scheduleTimesPerWeek;
+
   final String? equipmentLocation;
   final Set<String> homeEquipment;
   final String? otherEquipment;
   final Set<String> focusAreas;
   final bool hasInjury;
   final String? injuryDetails;
-  final String? cardioPreference;
-  final String? cardioSchedule;
+
+  // V3 (Ref. Ponto 9 - Cardio): Lógica de Cardio Refatorada
+  final String? cardioPreference; // 'sim', 'nao', 'ia_decide'
+  final String? cardioType; // 'corrida', 'natacao', 'ciclismo', 'outros'
+  final String? cardioOtherDetail; // "Dança"
+  final String?
+      cardioScheduleMode; // 'on_days', 'days_of_week', 'times_per_week'
+  final Set<String> cardioDaysOfWeek;
+  final int? cardioTimesPerWeek;
 
   // Módulo 2.3: Dieta (Telas 1.14 - 1.17)
+  // V3 (Ref. Ponto 11 - Dieta): Adicionados
+  final bool dietHasNoRestrictions;
+  final String? dietOtherRestriction;
   final Set<String> dietRestrictions;
+
   final int? mealCount;
   final Set<String> foodDislikes;
   final bool? interestInSupplements;
@@ -53,13 +57,12 @@ class OnboardingDataModel {
   final String? phoneNumber;
   final String? selectedPlan;
 
-  /// Construtor V3.1.14
+  /// Construtor V3 (Sprint 1)
   const OnboardingDataModel({
-    // V3.1.14 (REMOVIDO):
-    // this.userCredential,
     // M1
-    this.name, // V3.1.14 (MANTIDO)
+    this.name,
     this.termsAccepted = false,
+    this.healthDataAccepted = false, // V3 (Ponto 15)
     // M2.1
     this.age,
     this.height,
@@ -69,18 +72,28 @@ class OnboardingDataModel {
     this.objective,
     this.targetWeight,
     this.experienceLevel,
-    this.schedulingMode = 'smart',
-    this.smartFrequency,
-    this.fixedDays = const <String>{},
+    // V3 (Ponto 6 - Agenda)
+    this.scheduleMode,
+    this.scheduleDaysOfWeek = const <String>{},
+    this.scheduleTimesPerWeek,
+    //
     this.equipmentLocation,
     this.homeEquipment = const <String>{},
     this.otherEquipment,
     this.focusAreas = const <String>{},
     this.hasInjury = false,
     this.injuryDetails,
+    // V3 (Ponto 9 - Cardio)
     this.cardioPreference,
-    this.cardioSchedule,
+    this.cardioType,
+    this.cardioOtherDetail,
+    this.cardioScheduleMode,
+    this.cardioDaysOfWeek = const <String>{},
+    this.cardioTimesPerWeek,
     // M2.3
+    // V3 (Ponto 11 - Dieta)
+    this.dietHasNoRestrictions = false,
+    this.dietOtherRestriction,
     this.dietRestrictions = const <String>{},
     this.mealCount = 4,
     this.foodDislikes = const <String>{},
@@ -90,12 +103,11 @@ class OnboardingDataModel {
     this.selectedPlan,
   });
 
-  /// Método CopyWith V3.1.14 (Imutável)
+  /// Método CopyWith V3 (Sprint 1)
   OnboardingDataModel copyWith({
-    // V3.1.14 (REMOVIDO):
-    // UserCredential? userCredential,
     String? name,
     bool? termsAccepted,
+    bool? healthDataAccepted, // V3 (Ponto 15)
     int? age,
     int? height,
     double? currentWeight,
@@ -103,18 +115,29 @@ class OnboardingDataModel {
     String? objective,
     double? targetWeight,
     String? experienceLevel,
-    String? schedulingMode,
-    int? smartFrequency,
-    Set<String>? fixedDays,
+    // V3 (Ponto 6 - Agenda)
+    String? scheduleMode,
+    Set<String>? scheduleDaysOfWeek,
+    int? scheduleTimesPerWeek,
+    //
     String? equipmentLocation,
     Set<String>? homeEquipment,
     String? otherEquipment,
     Set<String>? focusAreas,
     bool? hasInjury,
     String? injuryDetails,
+    // V3 (Ponto 9 - Cardio)
     String? cardioPreference,
-    String? cardioSchedule,
+    String? cardioType,
+    String? cardioOtherDetail,
+    String? cardioScheduleMode,
+    Set<String>? cardioDaysOfWeek,
+    int? cardioTimesPerWeek,
+    // V3 (Ponto 11 - Dieta)
+    bool? dietHasNoRestrictions,
+    String? dietOtherRestriction,
     Set<String>? dietRestrictions,
+    //
     int? mealCount,
     Set<String>? foodDislikes,
     bool? interestInSupplements,
@@ -122,10 +145,9 @@ class OnboardingDataModel {
     String? selectedPlan,
   }) {
     return OnboardingDataModel(
-      // V3.1.14 (REMOVIDO):
-      // userCredential: userCredential ?? this.userCredential,
       name: name ?? this.name,
       termsAccepted: termsAccepted ?? this.termsAccepted,
+      healthDataAccepted: healthDataAccepted ?? this.healthDataAccepted, // V3
       age: age ?? this.age,
       height: height ?? this.height,
       currentWeight: currentWeight ?? this.currentWeight,
@@ -133,25 +155,32 @@ class OnboardingDataModel {
       objective: objective ?? this.objective,
       targetWeight: targetWeight ?? this.targetWeight,
       experienceLevel: experienceLevel ?? this.experienceLevel,
-      schedulingMode: schedulingMode ?? this.schedulingMode,
-      smartFrequency: smartFrequency ?? this.smartFrequency,
-      fixedDays: fixedDays ?? this.fixedDays,
+      // V3 (Ponto 6 - Agenda)
+      scheduleMode: scheduleMode ?? this.scheduleMode,
+      scheduleDaysOfWeek: scheduleDaysOfWeek ?? this.scheduleDaysOfWeek,
+      scheduleTimesPerWeek: scheduleTimesPerWeek ?? this.scheduleTimesPerWeek,
+      //
       equipmentLocation: equipmentLocation ?? this.equipmentLocation,
       homeEquipment: homeEquipment ?? this.homeEquipment,
       otherEquipment: otherEquipment ?? this.otherEquipment,
       focusAreas: focusAreas ?? this.focusAreas,
       hasInjury: hasInjury ?? this.hasInjury,
       injuryDetails: injuryDetails ?? this.injuryDetails,
+      // V3 (Ponto 9 - Cardio)
       cardioPreference: cardioPreference ?? this.cardioPreference,
-      cardioSchedule: cardioSchedule ?? this.cardioSchedule,
+      cardioType: cardioType ?? this.cardioType,
+      cardioOtherDetail: cardioOtherDetail ?? this.cardioOtherDetail,
+      cardioScheduleMode: cardioScheduleMode ?? this.cardioScheduleMode,
+      cardioDaysOfWeek: cardioDaysOfWeek ?? this.cardioDaysOfWeek,
+      cardioTimesPerWeek: cardioTimesPerWeek ?? this.cardioTimesPerWeek,
+      // V3 (Ponto 11 - Dieta)
+      dietHasNoRestrictions:
+          dietHasNoRestrictions ?? this.dietHasNoRestrictions,
+      dietOtherRestriction: dietOtherRestriction ?? this.dietOtherRestriction,
       dietRestrictions: dietRestrictions ?? this.dietRestrictions,
+      //
       mealCount: mealCount ?? this.mealCount,
       foodDislikes: foodDislikes ?? this.foodDislikes,
-      // ---
-      // V3.1.14 (A CORREÇÃO)
-      // O Handoff V3.1.14 (anterior) tinha um 'S' maiúsculo aqui.
-      // O Handoff V3.1.14 (corrigido) usa o 's' minúsculo (V3).
-      // ---
       interestInSupplements:
           interestInSupplements ?? this.interestInSupplements,
       phoneNumber: phoneNumber ?? this.phoneNumber,

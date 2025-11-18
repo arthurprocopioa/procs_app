@@ -4,10 +4,13 @@ import 'equipment_screen.dart'; // Próxima tela (1.9)
 import '../../../../core/services/analytics_service.dart';
 import '../../../../core/services/haptic_service.dart';
 import '../../application/onboarding_provider.dart';
+// V3 (NOVOS IMPORTS): Widgets reutilizáveis
+import '../widgets/premium_progress_bar.dart';
+import '../widgets/premium_selection_card.dart';
 
-// Enum local para controlar o estado do Toggle V3
-enum _ScheduleMode { smart, fixed }
-
+/// V3 (PONTO 6): Tela de Agenda (Frequência)
+/// Refatorada para a nova UX (Ponto 6) e para usar
+/// o Data Model e Provider do Sprint 1.
 class ScheduleScreen extends StatefulWidget {
   const ScheduleScreen({super.key});
 
@@ -16,60 +19,55 @@ class ScheduleScreen extends StatefulWidget {
 }
 
 class _ScheduleScreenState extends State<ScheduleScreen> {
-  // Estado V3: Controla o toggle localmente
-  _ScheduleMode _selectedMode = _ScheduleMode.smart;
+  // V3 (PONTO 6): A UI agora é baseada no `scheduleMode`
+  // 'days_of_week' ou 'times_per_week'
 
-  // Mapa V3: Opções para o modo 'Smart'
-  final Map<int?, String> _smartOptions = {
-    1: '1 treino/semana',
-    2: '2 treinos/semana',
-    3: '3_treinos/semana', // (Visto na Ref)
-    4: '4 treinos/semana',
-    5: '5 treinos/semana',
-    6: '6 treinos/semana',
-    7: 'Todos os dias', // (Visto na Ref)
-  };
-
-  // Mapa V3: Opções para o modo 'Fixed'
+  // V3: Mapa para os dias da semana
   final Map<String, String> _fixedOptions = {
     'sunday': 'Domingo',
-    'monday': 'Segunda-Feira',
-    'tuesday': 'Terça-Feira',
-    'wednesday': 'Quarta-Feira',
-    'thursday': 'Quinta-Feira',
-    'friday': 'Sexta-Feira',
+    'monday': 'Segunda',
+    'tuesday': 'Terça',
+    'wednesday': 'Quarta',
+    'thursday': 'Quinta',
+    'friday': 'Sexta',
     'saturday': 'Sábado',
+  };
+
+  // V3: Mapa para a frequência
+  final Map<int, String> _smartOptions = {
+    1: '1 vez por semana',
+    2: '2 vezes por semana',
+    3: '3 vezes por semana',
+    4: '4 vezes por semana',
+    5: '5 vezes por semana',
+    6: '6 vezes por semana',
+    7: '7 vezes por semana',
   };
 
   @override
   void initState() {
     super.initState();
-    // V3: Analytics
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<AnalyticsService>(context, listen: false)
           .trackScreenView('schedule');
     });
   }
 
-  /// V3: Navega para a próxima tela
+  /// V3: Ação de 'Próximo' (usando nova lógica do Provider)
   void _onNext(BuildContext context) {
     final provider = context.read<OnboardingProvider>();
-
-    // V3: Haptics
     HapticService.mediumImpact();
 
-    // V3: Analytics (Salva o modo e a seleção)
     final analyticsParams = {
-      'mode': provider.data.schedulingMode,
-      'smart_frequency': provider.data.smartFrequency?.toString(),
-      'fixed_days': provider.data.fixedDays.join(','),
+      'schedule_mode': provider.data.scheduleMode,
+      'schedule_days': provider.data.scheduleDaysOfWeek.join(','),
+      'schedule_times': provider.data.scheduleTimesPerWeek?.toString(),
     };
     context.read<AnalyticsService>().trackEvent(
           'onboarding_schedule_set',
           parameters: analyticsParams,
         );
 
-    // V3: Navegação
     Navigator.of(context).push(MaterialPageRoute(
       builder: (context) => const EquipmentScreen(), // Navega para 1.9
     ));
@@ -79,229 +77,228 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final textTheme = theme.textTheme;
-    final colorScheme = theme.colorScheme;
     final provider = context.watch<OnboardingProvider>();
+    final data = provider.data;
 
-    // V3: Lógica de ativação do botão "Próximo"
-    final bool isSmartSelected = provider.data.schedulingMode == 'smart' &&
-        provider.data.smartFrequency != null;
-    final bool isFixedSelected = provider.data.schedulingMode == 'fixed' &&
-        provider.data.fixedDays.isNotEmpty;
-    final bool canContinue = isSmartSelected || isFixedSelected;
+    // V3 (PONTO 6): Lógica de ativação do botão "Próximo"
+    final bool canContinue;
+    if (data.scheduleMode == 'days_of_week') {
+      canContinue = data.scheduleDaysOfWeek.isNotEmpty;
+    } else if (data.scheduleMode == 'times_per_week') {
+      canContinue = data.scheduleTimesPerWeek != null;
+    } else {
+      canContinue = false;
+    }
 
     return Scaffold(
       appBar: AppBar(
-        // V3: Título do AppBar (Usa o Tema V3)
-        title: Text(
-          "Etapa 5 de 13",
-          style: theme.appBarTheme.titleTextStyle,
+        // V3 (PONTO 2): "Etapa" removido
+        title: null,
+        // V3 (PONTO 3): Nova barra de progresso
+        bottom: const PreferredSize(
+          preferredSize: Size.fromHeight(8.0),
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: 24.0),
+            child: PremiumProgressBar(progress: 5 / 13),
+          ),
         ),
       ),
-      body: Column(
-        children: [
-          // V3: Barra de Progresso (Usa o Tema V3)
-          LinearProgressIndicator(
-            value: 5 / 13,
-            backgroundColor: theme.colorScheme.surfaceContainer,
-            valueColor: AlwaysStoppedAnimation<Color>(colorScheme.primary),
-          ),
-
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const SizedBox(height: 16),
-                  // V3: Título (Usa o Tema V3)
-                  Text(
-                    "Com que frequência você quer treinar?",
-                    style: textTheme.headlineMedium,
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 32),
-
-                  // V3: Toggle (Referência)
-                  _buildScheduleToggle(theme, provider),
-
-                  const SizedBox(height: 16),
-
-                  // V3: Subtítulo (Muda baseado no Toggle)
-                  Text(
-                    _selectedMode == _ScheduleMode.smart
-                        ? "Adaptarei dinamicamente sua agenda de acordo com sua atividade e preferências."
-                        : "Você pode escolher os dias da semana específicos que deseja trabalhar.",
-                    style: textTheme.bodyMedium,
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 32),
-
-                  // V3: Conteúdo (Muda baseado no Toggle)
-                  if (_selectedMode == _ScheduleMode.smart)
-                    _buildSmartScheduleTab(provider)
-                  else
-                    _buildFixedScheduleTab(provider),
-
-                  const SizedBox(height: 96), // Espaço para o botão
-                ],
-              ),
+      // V3 (PONTO 15): Adiciona SingleChildScrollView
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 24.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const SizedBox(height: 16),
+            Text(
+              "Com que frequência você quer treinar?",
+              style: textTheme.headlineMedium,
+              textAlign: TextAlign.center,
             ),
-          ),
-        ],
-      ),
-      // V3: Botão Ancorado
-      bottomNavigationBar: Padding(
-        padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
-        child: ElevatedButton(
-          // V3: Estilo V3 (Referência)
-          style: ElevatedButton.styleFrom(
-            backgroundColor: canContinue
-                ? const Color(0xFF303030)
-                : theme.colorScheme.surfaceContainer,
-            foregroundColor:
-                canContinue ? Colors.white : theme.textTheme.bodyMedium?.color,
-          ),
-          onPressed: canContinue ? () => _onNext(context) : null,
-          child: const Text('Próximo'),
+            const SizedBox(height: 32),
+
+            // V3 (PONTO 6): Nova UX de seleção de modo
+            PremiumSelectionCard(
+              text: "Selecionar dias da semana",
+              isSelected: data.scheduleMode == 'days_of_week',
+              onTap: () {
+                HapticService.lightImpact();
+                provider.setScheduleMode('days_of_week');
+              },
+            ),
+            const SizedBox(height: 16),
+            PremiumSelectionCard(
+              text: "Selecionar quantidade de vezes",
+              isSelected: data.scheduleMode == 'times_per_week',
+              onTap: () {
+                HapticService.lightImpact();
+                provider.setScheduleMode('times_per_week');
+              },
+            ),
+
+            const SizedBox(height: 32),
+
+            // V3 (PONTO 6): Anima a aparição das opções
+            // Bloco 1: Dias da Semana
+            AnimatedCrossFade(
+              firstChild: _buildFixedScheduleTab(provider),
+              secondChild: Container(), // Vazio
+              crossFadeState: data.scheduleMode == 'days_of_week'
+                  ? CrossFadeState.showFirst
+                  : CrossFadeState.showSecond,
+              duration: const Duration(milliseconds: 300),
+            ),
+
+            // Bloco 2: Quantidade de Vezes
+            AnimatedCrossFade(
+              firstChild: _buildSmartScheduleTab(provider),
+              secondChild: Container(), // Vazio
+              crossFadeState: data.scheduleMode == 'times_per_week'
+                  ? CrossFadeState.showFirst
+                  : CrossFadeState.showSecond,
+              duration: const Duration(milliseconds: 300),
+            ),
+
+            const SizedBox(height: 40), // Espaço antes do botão
+
+            // V3 (PONTO 8b/15): Botão dentro do scroll
+            ElevatedButton(
+              onPressed: canContinue ? () => _onNext(context) : null,
+              child: const Text('Continuar'),
+            ),
+            const SizedBox(height: 40), // Espaço de fim de scroll
+          ],
         ),
       ),
     );
   }
 
-  /// V3: Widget do Toggle ('Inteligente' / 'Fixo')
-  Widget _buildScheduleToggle(ThemeData theme, OnboardingProvider provider) {
-    return Container(
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainer,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: ToggleButtons(
-        isSelected: [
-          _selectedMode == _ScheduleMode.smart,
-          _selectedMode == _ScheduleMode.fixed,
-        ],
-        onPressed: (index) {
-          HapticService.lightImpact();
-          setState(() {
-            _selectedMode =
-                index == 0 ? _ScheduleMode.smart : _ScheduleMode.fixed;
-          });
-          // V3: Salva no Provider
-          provider.setSchedulingMode(
-              _selectedMode == _ScheduleMode.smart ? 'smart' : 'fixed');
-        },
-        // V3: Estilização do Toggle (Premium)
-        color: theme.textTheme.bodyMedium?.color, // Cor Inativa
-        selectedColor: theme.colorScheme.onSurface, // Cor Ativa
-        fillColor: theme.cardTheme.color, // Fundo Ativo
-        splashColor: theme.colorScheme.primary.withOpacity(0.12),
-        borderRadius: BorderRadius.circular(10),
-        borderWidth: 0,
-        selectedBorderColor: Colors.transparent,
-        borderColor: Colors.transparent,
-        constraints: BoxConstraints.expand(
-            width: (MediaQuery.of(context).size.width / 2) - 36, // 50/50
-            height: 48),
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Text('AGENDA INTELIGENTE'),
-              const SizedBox(width: 4),
-              Text('✨', style: theme.textTheme.bodySmall), // Ícone V3
-            ],
-          ),
-          const Text('HORÁRIO FIXO'),
-        ],
-      ),
-    );
-  }
-
-  /// V3: Tab 'Agenda Inteligente'
+  /// V3 (PONTO 6): Tab 'Selecionar quantidade de vezes'
   Widget _buildSmartScheduleTab(OnboardingProvider provider) {
-    final currentFrequency = provider.data.smartFrequency;
+    final currentFrequency = provider.data.scheduleTimesPerWeek;
 
-    return Column(
-      children: _smartOptions.entries.map((entry) {
-        final key = entry.key;
-        final text = entry.value;
+    // V3 (PONTO 5): Usa GridView para um layout mais premium
+    return GridView.builder(
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        childAspectRatio: 1.1,
+        mainAxisSpacing: 12,
+        crossAxisSpacing: 12,
+      ),
+      itemCount: _smartOptions.length,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemBuilder: (context, index) {
+        final key = _smartOptions.keys.elementAt(index);
+        final text =
+            _smartOptions.values.elementAt(index).split(' ').first; // "1", "2"
+        final subtext = _smartOptions.values
+            .elementAt(index)
+            .split(' ')
+            .sublist(1)
+            .join(' '); // "vez por semana"
+
         final isSelected = currentFrequency == key;
 
-        return _buildSelectionCard(
+        return _buildGridCard(
           text: text,
+          subtext: subtext,
           isSelected: isSelected,
           onTap: () {
             HapticService.lightImpact();
-            provider.setSmartFrequency(key);
+            provider.setScheduleTimesPerWeek(key);
           },
         );
-      }).toList(),
+      },
     );
   }
 
-  /// V3: Tab 'Horário Fixo'
+  /// V3 (PONTO 6): Tab 'Selecionar dias da semana'
   Widget _buildFixedScheduleTab(OnboardingProvider provider) {
-    final currentDays = provider.data.fixedDays;
+    final currentDays = provider.data.scheduleDaysOfWeek;
 
-    return Column(
-      children: _fixedOptions.entries.map((entry) {
-        final key = entry.key;
-        final text = entry.value;
+    // V3 (PONTO 5): Usa GridView aqui também
+    return GridView.builder(
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        childAspectRatio: 1.1, // Mais "quadrado"
+        mainAxisSpacing: 12,
+        crossAxisSpacing: 12,
+      ),
+      itemCount: _fixedOptions.length,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemBuilder: (context, index) {
+        final key = _fixedOptions.keys.elementAt(index);
+        final text =
+            _fixedOptions.values.elementAt(index).substring(0, 3); // "Seg"
+        final subtext = _fixedOptions.values.elementAt(index); // "Segunda"
+
         final isSelected = currentDays.contains(key);
 
-        return _buildSelectionCard(
+        return _buildGridCard(
           text: text,
+          subtext: subtext,
           isSelected: isSelected,
           onTap: () {
             HapticService.lightImpact();
-            provider.toggleFixedDay(key);
+            provider.toggleScheduleDay(key);
           },
         );
-      }).toList(),
+      },
     );
   }
 
-  /// V3: Widget de Card de Seleção (Reutilizado)
-  Widget _buildSelectionCard({
+  /// V3 (PONTO 7): Widget de Card de Seleção para o Grid
+  Widget _buildGridCard({
     required String text,
+    required String subtext,
     required bool isSelected,
     required VoidCallback onTap,
   }) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
-    // V3: Estilo 'Ativo' (Preto) ou 'Inativo' (Cinza)
-    final Color bgColor = isSelected
-        ? const Color(0xFF303030) // Fundo Preto (Visto na Ref)
-        : theme.cardTheme.color!; // Fundo Cinza (Tema V3)
-
-    final Color fgColor =
-        isSelected ? Colors.white : theme.colorScheme.onSurface;
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6.0),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-          decoration: BoxDecoration(
-            color: bgColor,
-            borderRadius: BorderRadius.circular(16),
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? colorScheme.primary // Fundo Dourado Sólido
+              : theme.cardTheme.color, // Cor base do card
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isSelected
+                ? colorScheme.primary
+                : theme.colorScheme.surfaceContainer, // Borda inativa
+            width: 1.0,
           ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                text,
-                style: theme.textTheme.bodyLarge?.copyWith(
-                  color: fgColor,
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                ),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              text,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: isSelected
+                    ? colorScheme.onPrimary // Texto Preto/Escuro
+                    : colorScheme.onSurface, // Texto padrão
               ),
-              if (isSelected)
-                const Icon(Icons.check_circle, color: Colors.white, size: 20),
-            ],
-          ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              subtext,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: isSelected
+                    ? colorScheme.onPrimary.withOpacity(0.8)
+                    : colorScheme.onSurface.withOpacity(0.6),
+              ),
+            ),
+          ],
         ),
       ),
     );
