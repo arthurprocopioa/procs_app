@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 // import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import '../../../../core/services/analytics_service.dart';
+import '../../../../core/services/haptic_service.dart'; // Import HapticService
 import 'terms_screen.dart';
 
 class WelcomeScreen extends StatefulWidget {
@@ -25,11 +26,11 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   }
 
   // ---
-  // V3.1.7 (LÓGICA "GUEST-PRIMEIRO")
-  // (A lógica V3.1.7 permanece 100% correta)
+  // V3.1.7 (LÓGICA "GUEST-PRIMEIRO") - (INTOCADA)
   // ---
   Future<void> _onStart(BuildContext context) async {
-    await HapticFeedback.mediumImpact();
+    // V3: Haptics refatorado para usar o HapticService
+    await HapticService.mediumImpact();
     context.read<AnalyticsService>().trackEvent(
       'onboarding_start_guest',
       parameters: {'login_method': 'guest'},
@@ -43,11 +44,11 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   }
 
   // ---
-  // V3.1.7 (LÓGICA "JÁ TENHO CONTA")
-  // (A lógica V3.1.7 permanece 100% correta)
+  // V3.1.7 (LÓGICA "JÁ TENHO CONTA") - (INTOCADA)
   // ---
   Future<void> _onLogin(BuildContext context) async {
-    await HapticFeedback.mediumImpact();
+    // V3: Haptics refatorado para usar o HapticService
+    await HapticService.mediumImpact();
     context.read<AnalyticsService>().trackEvent(
       'onboarding_login_attempt',
       parameters: {'login_method': 'login_button_stub'},
@@ -69,31 +70,28 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     final textTheme = theme.textTheme;
 
     return Scaffold(
+      // CRÍTICA 1: Força o fundo preto puro para mesclar com a imagem.
+      backgroundColor: Colors.black,
       body: SafeArea(
-        bottom: false,
+        bottom: false, // Permite que os botões fiquem na borda inferior
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24.0),
           child: Column(
-            // ---
-            // V3.1.11 (FIX 1): O ALINHAMENTO (REVERSÃO V3.1.9)
-            // Handoff V3.1.10 (Centralizado) causou o bug V3.1.11.
-            // Handoff V3.1.9 (Start) é a correção V3.1.11.
-            // ---
-            crossAxisAlignment: CrossAxisAlignment.start,
+            // CRÍTICA 3: Altera para .stretch para que os botões
+            // ocupem a largura total, como na referência Zing.
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const SizedBox(height: 32),
               // ---
-              // V3.1.9 (FIX 2): A COR (IDENTIDADE V3)
-              // (Esta parte V3.1.9 estava correta)
+              // CRÍTICA 4: Alinhamento de Texto
               // ---
               Text(
                 'Bem-vindo ao Procs AI',
-                // V3.1.9 (FIX 2): Aplica a cor V3 'primary'
                 style: textTheme.displayLarge?.copyWith(
                   color: theme.colorScheme.primary,
                 ),
-                // V3.1.11 (FIX 1): Alinha o texto
-                textAlign: TextAlign.start,
+                // CRÍTICA 4b: Textos agora centralizados
+                textAlign: TextAlign.center,
               ),
               const SizedBox(height: 16),
               Text(
@@ -101,28 +99,31 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                 style: textTheme.bodyLarge?.copyWith(
                   color: theme.colorScheme.onSurface.withOpacity(0.8),
                 ),
-                // V3.1.11 (FIX 1): Alinha o texto
-                textAlign: TextAlign.start,
+                // CRÍTICA 4b: Textos agora centralizados
+                textAlign: TextAlign.center,
               ),
               const SizedBox(height: 32),
 
-              // V3.1.8 (Imagem "Zing" - Sem Mudanças)
+              // ---
+              // CRÍTICA 2 e 3: Layout e Alinhamento da Imagem
+              // ---
               Expanded(
-                child: Container(
-                  clipBehavior: Clip.antiAlias,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(24),
-                  ),
-                  child: Image.asset(
-                    'assets/images/hero_image.png',
-                    fit: BoxFit.cover,
-                    alignment: const Alignment(0.0, -0.2),
-                  ),
+                // Removemos o Container/ClipRRect desnecessário.
+                // A imagem agora vai "flutuar" no fundo preto.
+                child: Image.asset(
+                  'assets/images/hero_image.png',
+                  // BoxFit.contain garante que a imagem inteira seja
+                  // exibida, sem cortes, como na referência Zing.
+                  fit: BoxFit.contain,
+                  // Garante que a imagem fique centralizada no espaço.
+                  alignment: Alignment.center,
                 ),
               ),
               const SizedBox(height: 32),
 
-              // V3.1.8 (Botões "Zing" - Sem Mudanças)
+              // ---
+              // CRÍTICA 5: Estilo dos Botões
+              // ---
               ElevatedButton(
                 onPressed: () => _onStart(context),
                 child: const Text('Começar'),
@@ -131,12 +132,15 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
               ElevatedButton(
                 onPressed: () => _onLogin(context),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: theme.colorScheme.surfaceVariant,
+                  // CRÍTICA 5: Usa a cor de container/fundo secundário
+                  // definida no seu app_theme.dart (#1E1E1E)
+                  backgroundColor: theme.colorScheme.surfaceContainer,
                   foregroundColor: theme.colorScheme.onSurface,
                 ),
                 child: const Text('Já tenho conta'),
               ),
-              const SizedBox(height: 24),
+              // V3: Aumenta o padding inferior para corresponder à referência
+              const SizedBox(height: 32),
             ],
           ),
         ),

@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import '../../../../core/services/analytics_service.dart';
+import '../../../../core/services/haptic_service.dart'; // V3: Import Haptics
 import '../../application/onboarding_provider.dart';
 import 'name_screen.dart';
 
@@ -18,6 +19,9 @@ class TermsScreen extends StatefulWidget {
 class _TermsScreenState extends State<TermsScreen> {
   late AnalyticsService _analytics;
 
+  // V3 (REFATORADO): Controle local para a primeira opção (Zing)
+  bool _healthDataAccepted = false;
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -25,10 +29,9 @@ class _TermsScreenState extends State<TermsScreen> {
     _analytics.trackScreenView('terms_screen');
   }
 
+  // Lógica de Modal (INTOCADA)
   void _showTermsModal(BuildContext context, String title, String content) {
-    // Feedback tátil usando API Flutter
-    HapticFeedback.lightImpact();
-
+    HapticService.lightImpact(); // V3: Haptics
     final theme = Theme.of(context);
 
     showModalBottomSheet(
@@ -60,7 +63,7 @@ class _TermsScreenState extends State<TermsScreen> {
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
                   child: Text(
-                    content * 3,
+                    content * 3, // Conteúdo placeholder
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: theme.colorScheme.onSurface.withOpacity(0.8),
                       height: 1.5,
@@ -75,16 +78,18 @@ class _TermsScreenState extends State<TermsScreen> {
     );
   }
 
-  Widget _buildTermsText(BuildContext context) {
-    final theme = Theme.of(context);
+  // RichText dos Termos (LÓGICA INTOCADA, mas será usado no novo layout)
+  RichText _buildTermsText(BuildContext context, ThemeData theme) {
     final defaultStyle = theme.textTheme.bodyMedium?.copyWith(
       color: theme.colorScheme.onSurface.withOpacity(0.7),
+      height: 1.5, // V3: Melhora a leitura
     );
     final linkStyle = theme.textTheme.bodyMedium?.copyWith(
       color: theme.colorScheme.primary,
       fontWeight: FontWeight.w600,
       decoration: TextDecoration.underline,
       decorationColor: theme.colorScheme.primary,
+      height: 1.5,
     );
 
     const loremIpsum =
@@ -94,7 +99,9 @@ class _TermsScreenState extends State<TermsScreen> {
       text: TextSpan(
         style: defaultStyle,
         children: [
-          const TextSpan(text: "Eu li e aceito os "),
+          const TextSpan(
+              text:
+                  "Eu entendo que o Procs AI usa IA generativa. Eu li e entendi os "),
           TextSpan(
             text: "Termos de Uso",
             style: linkStyle,
@@ -112,8 +119,32 @@ class _TermsScreenState extends State<TermsScreen> {
                 _showTermsModal(context, "Política de Privacidade", loremIpsum);
               },
           ),
-          const TextSpan(text: "."),
+          const TextSpan(text: " a este respeito."),
         ],
+      ),
+    );
+  }
+
+  // V3 (NOVO): Ação para o botão "Aceitar tudo"
+  void _onAcceptAll(OnboardingProvider provider) {
+    HapticService.mediumImpact();
+    setState(() {
+      _healthDataAccepted = true;
+    });
+    provider.setTermsAccepted(true);
+  }
+
+  // V3 (NOVO): Ação para o botão "Continuar"
+  void _onContinue(BuildContext context) {
+    HapticService.mediumImpact();
+    _analytics.trackEvent(
+      'terms_accepted',
+      // V3: Logamos ambos os consentimentos
+      parameters: {'accepted_terms': true, 'accepted_health_data': true},
+    );
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => const NameScreen(),
       ),
     );
   }
@@ -125,85 +156,178 @@ class _TermsScreenState extends State<TermsScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        // V3: AppBar limpo, como na referência
         backgroundColor: theme.scaffoldBackgroundColor,
         elevation: 0,
         leading: BackButton(color: theme.colorScheme.onSurface),
+        // V3 (REMOVIDO): Barra de progresso removida conforme solicitado.
+        bottom: null,
       ),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24.0),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Icon(
-                FontAwesomeIcons.shieldHalved,
-                size: 64,
-                color: theme.colorScheme.primary,
+              // V3: Ícone grande no estilo Zing
+              Container(
+                width: 120,
+                height: 120,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  // V3: Cor de fundo clara, como no Zing, adaptada ao dark theme
+                  color: theme.colorScheme.surfaceContainer.withOpacity(0.5),
+                ),
+                child: Icon(
+                  FontAwesomeIcons.shieldHalved,
+                  size: 56,
+                  // V3: Ícone mais escuro, como no Zing
+                  color: theme.colorScheme.onSurface,
+                ),
               ),
               const SizedBox(height: 24),
+              // V3: Título centralizado
               Text(
-                "Nossa Política de Privacidade",
+                "Privacidade total", // V3: Título do Zing
                 style: textTheme.displayLarge?.copyWith(fontSize: 28),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 48),
+              const SizedBox(height: 32),
+
+              // V3 (CRÍTICA 1 e 2): A primeira opção (Zing)
               Consumer<OnboardingProvider>(
                 builder: (context, provider, child) {
-                  final bool termsAccepted = provider.data.termsAccepted;
-                  return Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Checkbox(
-                        value: termsAccepted,
-                        onChanged: (bool? newValue) {
-                          if (newValue != null) {
-                            HapticFeedback.lightImpact();
-                            provider.setTermsAccepted(newValue);
-                          }
-                        },
-                        activeColor: theme.colorScheme.primary,
-                        checkColor: theme.colorScheme.onSurface,
-                      ),
-                      Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.only(top: 12.0),
-                          child: _buildTermsText(context),
-                        ),
-                      ),
-                    ],
+                  return _buildTermRow(
+                    context: context,
+                    theme: theme,
+                    text:
+                        "Concordo com o processamento dos meus dados de saúde para permitir que o Procs AI funcione corretamente.",
+                    isAccepted: _healthDataAccepted,
+                    onToggle: (value) {
+                      HapticService.lightImpact();
+                      setState(() {
+                        _healthDataAccepted = value;
+                      });
+                    },
                   );
                 },
               ),
-              const Spacer(),
+              const SizedBox(height: 16),
+
+              // V3 (CRÍTICA 1 e 2): A segunda opção (Zing)
               Consumer<OnboardingProvider>(
                 builder: (context, provider, child) {
-                  final bool termsAccepted = provider.data.termsAccepted;
+                  final bool policyAccepted = provider.data.termsAccepted;
+                  return _buildTermRow(
+                    context: context,
+                    theme: theme,
+                    // V3: Usa o RichText com os links
+                    richText: _buildTermsText(context, theme),
+                    isAccepted: policyAccepted,
+                    onToggle: (value) {
+                      HapticService.lightImpact();
+                      provider.setTermsAccepted(value);
+                    },
+                  );
+                },
+              ),
 
-                  return SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: termsAccepted
-                          ? () {
-                              HapticFeedback.mediumImpact();
-                              _analytics.trackEvent(
-                                'terms_accepted',
-                                parameters: {'accepted': true},
-                              );
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (context) => const NameScreen(),
-                                ),
-                              );
-                            }
-                          : null,
-                      child: const Text("Continuar"),
-                    ),
+              const SizedBox(height: 16),
+              // V3: Texto de ajuda do Zing
+              Text(
+                "Para retirar seu consentimento, por favor entre em contato com o suporte.",
+                style: textTheme.bodyMedium?.copyWith(
+                    color: textTheme.bodyMedium?.color?.withOpacity(0.7)),
+                textAlign: TextAlign.start,
+              ),
+
+              const Spacer(),
+
+              // V3: Botões do Zing
+              Consumer<OnboardingProvider>(
+                builder: (context, provider, child) {
+                  final bool policyAccepted = provider.data.termsAccepted;
+                  // V3: Botão "Continuar" só ativa com AMBOS marcados
+                  final bool canContinue =
+                      _healthDataAccepted && policyAccepted;
+
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // V3 (NOVO): Botão "Aceitar tudo"
+                      ElevatedButton(
+                        // V3: Estilo secundário
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: theme.colorScheme.surfaceContainer,
+                          foregroundColor: theme.colorScheme.onSurface,
+                        ),
+                        onPressed: () => _onAcceptAll(provider),
+                        child: const Text("Aceitar tudo"),
+                      ),
+                      const SizedBox(height: 12),
+                      // V3: Botão "Continuar"
+                      ElevatedButton(
+                        // V3: Estilo primário (do tema)
+                        onPressed:
+                            canContinue ? () => _onContinue(context) : null,
+                        child: const Text("Continuar"),
+                      ),
+                    ],
                   );
                 },
               ),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  // V3 (CRÍTICA 2): Widget para a linha com checkbox redondo
+  Widget _buildTermRow({
+    required BuildContext context,
+    required ThemeData theme,
+    required bool isAccepted,
+    required Function(bool) onToggle,
+    String? text,
+    RichText? richText,
+  }) {
+    return InkWell(
+      // V3: Permite clicar na linha inteira
+      onTap: () => onToggle(!isAccepted),
+      borderRadius: BorderRadius.circular(12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // V3: Usa Radio para o visual redondo, mas com lógica de Checkbox
+          Radio<bool>(
+            groupValue: true, // Sempre no grupo "true"
+            value: isAccepted, // O valor é o próprio estado
+            onChanged: (value) => onToggle(!isAccepted), // Inverte ao clicar
+            activeColor: theme.colorScheme.primary, // Cor dourada
+            fillColor: WidgetStateProperty.resolveWith((states) {
+              if (states.contains(WidgetState.selected)) {
+                return theme.colorScheme.primary;
+              }
+              return theme.colorScheme.onSurface
+                  .withOpacity(0.6); // Cor da borda
+            }),
+          ),
+          // V3: Texto ao lado
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.only(top: 10.0), // Alinha o texto
+              child: richText ??
+                  Text(
+                    text ?? '',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurface.withOpacity(0.7),
+                      height: 1.5,
+                    ),
+                  ),
+            ),
+          ),
+        ],
       ),
     );
   }

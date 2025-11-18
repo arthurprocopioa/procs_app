@@ -25,7 +25,7 @@ dependencies:
   firebase_analytics: ^11.1.0
 
   # 3. Monetização
-  purchases_flutter: ^6.30.0 # (RevenueCat V3)
+  purchases_flutter: ^9.9.7 # (RevenueCat V3)
 
   # 4. UI/UX (V3.1)
   google_fonts: ^6.2.1

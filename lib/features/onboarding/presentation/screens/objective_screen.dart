@@ -26,6 +26,25 @@ class _ObjectiveScreenState extends State<ObjectiveScreen> {
     });
   }
 
+  // ---
+  // LÓGICA DE NAVEGAÇÃO (INTOCADA)
+  // ---
+  void _onNext(BuildContext context, String currentObjective) {
+    // V3: Haptics
+    HapticFeedback.mediumImpact();
+
+    // V3: Analytics
+    context.read<AnalyticsService>().trackEvent(
+      'onboarding_objective_selected',
+      parameters: {'objective': currentObjective},
+    );
+
+    // V3: Navegação
+    Navigator.of(context).push(MaterialPageRoute(
+      builder: (context) => const TargetWeightScreen(),
+    ));
+  }
+
   @override
   Widget build(BuildContext context) {
     final onboardingProvider = context.watch<OnboardingProvider>();
@@ -34,7 +53,7 @@ class _ObjectiveScreenState extends State<ObjectiveScreen> {
 
     return Scaffold(
       // ---
-      // V3: AppBar com Progress Bar Tematizado
+      // V3: AppBar com Progress Bar Tematizado (INTOCADO)
       // ---
       appBar: const _OnboardingAppBar(progress: 2 / 13),
 
@@ -47,7 +66,7 @@ class _ObjectiveScreenState extends State<ObjectiveScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   // ---
-                  // V3: Título (Tematizado)
+                  // V3: Título (Tematizado) (INTOCADO)
                   // ---
                   Text(
                     "Qual é o seu principal objetivo?",
@@ -58,9 +77,11 @@ class _ObjectiveScreenState extends State<ObjectiveScreen> {
 
                   // ---
                   // V3: Botões de Seleção (Refatorados)
+                  // A LÓGICA DE CHAMADA (onTap) É A MESMA.
                   // ---
                   _ObjectiveCard(
                     text: 'Perder Gordura',
+                    icon: Icons.local_fire_department_rounded, // Ícone Premium
                     isSelected: currentObjective == 'perder_gordura',
                     onTap: () {
                       context
@@ -70,10 +91,9 @@ class _ObjectiveScreenState extends State<ObjectiveScreen> {
                     },
                   ),
                   const SizedBox(height: 16),
-
-                  // V3: Opção "Manter" (da Lógica V1) com o estilo V3
                   _ObjectiveCard(
                     text: 'Manter/Saúde',
+                    icon: Icons.health_and_safety_rounded, // Ícone Premium
                     isSelected: currentObjective == 'manter_saude',
                     onTap: () {
                       context
@@ -83,9 +103,9 @@ class _ObjectiveScreenState extends State<ObjectiveScreen> {
                     },
                   ),
                   const SizedBox(height: 16),
-
                   _ObjectiveCard(
                     text: 'Ganhar Músculo',
+                    icon: Icons.fitness_center_rounded, // Ícone Premium
                     isSelected: currentObjective == 'ganhar_musculo',
                     onTap: () {
                       context
@@ -100,29 +120,14 @@ class _ObjectiveScreenState extends State<ObjectiveScreen> {
           ),
 
           // ---
-          // V3: Botão de Navegação (Haptics, Analytics)
+          // V3: Botão de Navegação (INTOCADO)
           // ---
           Padding(
             padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
             child: ElevatedButton(
-              // V3: Estilo (Branco) é aplicado automaticamente pelo AppTheme
               onPressed: currentObjective == null
                   ? null // Botão desabilitado
-                  : () {
-                      // V3: Haptics
-                      HapticFeedback.mediumImpact();
-
-                      // V3: Analytics
-                      context.read<AnalyticsService>().trackEvent(
-                        'onboarding_objective_selected',
-                        parameters: {'objective': currentObjective},
-                      );
-
-                      // V3: Navegação
-                      Navigator.of(context).push(MaterialPageRoute(
-                        builder: (context) => const TargetWeightScreen(),
-                      ));
-                    },
+                  : () => _onNext(context, currentObjective),
               child: const Text('Continuar'),
             ),
           ),
@@ -133,16 +138,17 @@ class _ObjectiveScreenState extends State<ObjectiveScreen> {
 }
 
 // ---
-// V3: Widget de Card de Seleção (Local)
-// Substitui o 'CustomSelectionButton'
+// V3: O NOVO WIDGET DE CARD PREMIUM (REFATORADO)
 // ---
 class _ObjectiveCard extends StatelessWidget {
   final String text;
+  final IconData icon; // Novo: Ícone para dar polimento
   final bool isSelected;
   final VoidCallback onTap;
 
   const _ObjectiveCard({
     required this.text,
+    required this.icon,
     required this.isSelected,
     required this.onTap,
   });
@@ -150,30 +156,59 @@ class _ObjectiveCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
     return GestureDetector(
       onTap: onTap,
-      child: Card(
-        // V3: Usa a cor e borda do CardTheme
-        color: isSelected
-            // [CORREÇÃO] 1. 'withOpacity' depreciado. Usando 'withAlpha'
-            ? theme.colorScheme.primary.withAlpha((255 * 0.1).round())
-            : theme.cardTheme.color,
-        shape: isSelected
-            ? RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-                side: BorderSide(color: theme.colorScheme.primary, width: 2),
-              )
-            : theme.cardTheme.shape,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-          child: Text(
-            text,
-            style: theme.textTheme.bodyLarge?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
-            textAlign: TextAlign.center,
+      // 1. Substituímos o Card por um AnimatedContainer para suavizar
+      //    a mudança de cor, borda e sombra.
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+        decoration: BoxDecoration(
+          // 2. A cor de fundo é mais sutil quando selecionada
+          color: isSelected
+              ? colorScheme.primary.withOpacity(0.1)
+              : theme.cardTheme.color, // Cor base do tema
+          borderRadius: BorderRadius.circular(16),
+          // 3. A borda muda de cor e espessura
+          border: Border.all(
+            color: isSelected
+                ? colorScheme.primary
+                : colorScheme.surfaceContainer, // Cor 'inativa' do tema
+            width: isSelected ? 2.0 : 1.0,
           ),
+          // 4. (O TOQUE PREMIUM) Adicionamos um brilho (glow) quando selecionado
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: colorScheme.primary.withOpacity(0.15),
+                    blurRadius: 12.0,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : [], // Sem sombra quando não selecionado
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // 5. Adicionamos o Ícone para polimento visual
+            Icon(
+              icon,
+              color: isSelected ? colorScheme.primary : colorScheme.onSurface,
+              size: 20,
+            ),
+            const SizedBox(width: 16),
+            Text(
+              text,
+              style: theme.textTheme.bodyLarge?.copyWith(
+                fontWeight: FontWeight.w600,
+                // 6. O texto também muda de cor para dar ênfase
+                color: isSelected ? colorScheme.primary : colorScheme.onSurface,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
         ),
       ),
     );
@@ -181,8 +216,7 @@ class _ObjectiveCard extends StatelessWidget {
 }
 
 // ---
-// V3: Widget de AppBar Consistente
-// (Baseado no que foi feito em 'vital_data_screen.dart')
+// V3: Widget de AppBar Consistente (INTOCADO)
 // ---
 class _OnboardingAppBar extends StatelessWidget implements PreferredSizeWidget {
   final double progress; // Ex: 1 / 13

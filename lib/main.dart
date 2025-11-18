@@ -117,7 +117,7 @@ class MyApp extends StatelessWidget {
           analyticsObserver,
         ],
 
-        home: const CheckoutScreen(),
+        home: const WelcomeScreen(),
       ),
     );
   }
