@@ -2,37 +2,41 @@ import 'package:flutter/foundation.dart';
 import '../domain/onboarding_data_model.dart';
 
 /// V3 (SPRINT 1): Provider (O "Entrevistador" Imutável)
-/// Refatorado para Agenda (Ponto 6) e Cardio (Ponto 9)
+/// REFACTOR: Total de etapas ajustado para 15 (incluindo a nova User Location).
 class OnboardingProvider extends ChangeNotifier {
+  // --- CONSTANTE DE ARQUITETURA FINAL (13 originais + 2 novas de coleta) ---
+  static const int totalOnboardingSteps = 15;
+  // -------------------------------------
+
   OnboardingDataModel _data = const OnboardingDataModel();
   OnboardingDataModel get data => _data;
 
   // ---
-  // SETTERS V3 (Imutáveis: usam copyWith)
+  // SETTERS DE ACESSO (Módulo 1)
   // ---
 
-  // (Tela 1.2)
   void setTermsAccepted(bool accepted) {
     if (_data.termsAccepted == accepted) return;
     _data = _data.copyWith(termsAccepted: accepted);
     notifyListeners();
   }
 
-  // V3 (Ponto 15 - Terms Screen)
   void setHealthDataAccepted(bool accepted) {
     if (_data.healthDataAccepted == accepted) return;
     _data = _data.copyWith(healthDataAccepted: accepted);
     notifyListeners();
   }
 
-  // (Tela 1.2.1 - Name)
   void setName(String? name) {
     if (_data.name == name) return;
     _data = _data.copyWith(name: name);
     notifyListeners();
   }
 
-  // (Tela 1.3 - Vitais)
+  // ---
+  // SETTERS DE DADOS VITAIS (Módulo 2.1)
+  // ---
+
   void setAge(int age) {
     if (_data.age == age) return;
     _data = _data.copyWith(age: age);
@@ -57,36 +61,33 @@ class OnboardingProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // (Tela 1.4 - Objetivo)
+  // ---
+  // SETTERS DE TREINO (Módulo 2.2)
+  // ---
+
   void setObjective(String objective) {
     if (_data.objective == objective) return;
     _data = _data.copyWith(objective: objective);
     notifyListeners();
   }
 
-  // (Tela 1.5 - Peso-Alvo)
   void setTargetWeight(double target) {
     if (_data.targetWeight == target) return;
     _data = _data.copyWith(targetWeight: target);
     notifyListeners();
   }
 
-  // (Tela 1.6 - Experiência)
   void setExperienceLevel(String level) {
     if (_data.experienceLevel == level) return;
     _data = _data.copyWith(experienceLevel: level);
     notifyListeners();
   }
 
-  // ---
-  // V3 (Ref. Ponto 6 - Agenda): Setters da Agenda
-  // ---
+  // V3 (Ref. Ponto 6 - Agenda)
   void setScheduleMode(String mode) {
-    // mode: 'days_of_week' ou 'times_per_week'
     if (_data.scheduleMode == mode) return;
     _data = _data.copyWith(
       scheduleMode: mode,
-      // Reseta a outra opção ao trocar o modo
       scheduleDaysOfWeek:
           mode == 'days_of_week' ? _data.scheduleDaysOfWeek : const <String>{},
       scheduleTimesPerWeek:
@@ -140,7 +141,7 @@ class OnboardingProvider extends ChangeNotifier {
   void setOtherEquipment(String text) {
     if (_data.otherEquipment == text) return;
     _data = _data.copyWith(otherEquipment: text);
-    // (Não notifica, salvo no 'onNext')
+    // Nota: A notificação só é feita no momento de avançar de tela para evitar rebuilds excessivos
   }
 
   // (Tela 1.10 - Focus Area)
@@ -178,11 +179,8 @@ class OnboardingProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ---
-  // V3 (Ref. Ponto 9 - Cardio): Setters do Cardio
-  // ---
+  // V3 (Ref. Ponto 9 - Cardio)
   void setCardioPreference(String preference) {
-    // preference: 'sim', 'nao', 'ia_decide'
     if (_data.cardioPreference == preference) return;
 
     // Reseta todo o sub-fluxo de cardio se a preferência principal mudar
@@ -198,8 +196,6 @@ class OnboardingProvider extends ChangeNotifier {
   }
 
   void setCardioType(String type, {String? otherDetail}) {
-    // type: 'corrida', 'natacao', 'outros'
-    // otherDetail: "Dança"
     _data = _data.copyWith(
       cardioType: type,
       cardioOtherDetail: (type == 'outros') ? otherDetail : null,
@@ -208,7 +204,6 @@ class OnboardingProvider extends ChangeNotifier {
   }
 
   void setCardioScheduleMode(String mode) {
-    // mode: 'on_days', 'days_of_week', 'times_per_week'
     if (_data.cardioScheduleMode == mode) return;
     _data = _data.copyWith(
       cardioScheduleMode: mode,
@@ -238,9 +233,17 @@ class OnboardingProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  // NOVO SETTER: Tempo de Treino Diário (Passo 10/15)
+  void setTrainingTime(String? time) {
+    if (_data.trainingTime == time) return;
+    _data = _data.copyWith(trainingTime: time);
+    notifyListeners();
+  }
+
   // ---
-  // V3 (Ref. Ponto 11 - Dieta): Setters da Dieta
+  // SETTERS DE DIETA (Módulo 2.3)
   // ---
+
   void setDietHasNoRestrictions(bool hasNoRestrictions) {
     if (_data.dietHasNoRestrictions == hasNoRestrictions) return;
     _data = _data.copyWith(
@@ -276,35 +279,41 @@ class OnboardingProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // (Tela 1.15 - Refeições)
   void setMealCount(int count) {
     if (_data.mealCount == count) return;
     _data = _data.copyWith(mealCount: count);
     notifyListeners();
   }
 
-  // (Tela 1.16 - Food Dislikes)
   void setFoodDislikes(Set<String> dislikes) {
     if (setEquals(_data.foodDislikes, dislikes)) return;
     _data = _data.copyWith(foodDislikes: dislikes);
     notifyListeners(); // Notifica no 'onNext'
   }
 
-  // (Tela 1.17 - Supplements)
-  void setInterestInSupplements(bool interest) {
+  void setInterestInSupplements(bool? interest) {
     if (_data.interestInSupplements == interest) return;
     _data = _data.copyWith(interestInSupplements: interest);
     notifyListeners();
   }
 
-  // (Tela 1.23 - WhatsApp)
+  // NOVO SETTER: Localização do Usuário (Passo 15/15)
+  void setUserRegion(String? region) {
+    if (_data.userRegion == region) return;
+    _data = _data.copyWith(userRegion: region);
+    notifyListeners();
+  }
+
+  // ---
+  // SETTERS DE FECHAMENTO (Módulo 2.4)
+  // ---
+
   void setPhoneNumber(String? phone) {
     if (_data.phoneNumber == phone) return;
     _data = _data.copyWith(phoneNumber: phone);
     notifyListeners(); // Notifica no 'onNext'
   }
 
-  // (Tela 1.24 - Checkout)
   void setSelectedPlan(String plan) {
     if (_data.selectedPlan == plan) return;
     _data = _data.copyWith(selectedPlan: plan);

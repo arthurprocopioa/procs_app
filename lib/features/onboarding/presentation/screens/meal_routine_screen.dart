@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'food_preferences_screen.dart'; // Próxima tela (1.16)
+import 'food_preferences_screen.dart'; // Próxima tela (1.14/15)
 // ---
 // IMPORTS V3 (Fundação)
 // ---
 import '../../../../core/services/analytics_service.dart';
-import '../../../../core/services/haptic_service.dart'; // V3: O caminho correto
+import '../../../../core/services/haptic_service.dart';
 import '../../application/onboarding_provider.dart';
-// (Remove 'haptics.dart' V1)
-// (Remove 'app_theme.dart' V1)
+// V3 (NOVOS IMPORTS): Widgets reutilizáveis
+import '../widgets/premium_progress_bar.dart';
 
 /// Tela 1.15: O usuário informa o número de refeições diárias.
 /// Refatorada para Fundação V3 e UI V3 ("Ruler Picker").
@@ -41,7 +41,8 @@ class _MealRoutineScreenState extends State<MealRoutineScreen> {
     _currentMealCount = providerData.mealCount ?? 4; // Padrão V1 (4)
 
     // Calcula a página inicial baseada no valor (3=0, 4=1, 5=2, 6=3)
-    final initialPage = _currentMealCount - _minMeals;
+    final initialPage =
+        (_currentMealCount - _minMeals).clamp(0, _totalMeals - 1);
 
     _pageController = PageController(
       initialPage: initialPage,
@@ -68,7 +69,7 @@ class _MealRoutineScreenState extends State<MealRoutineScreen> {
     // V3: Haptics
     HapticService.mediumImpact();
 
-    // V3: Implementa o TODO (Salva o estado local no Provider)
+    // V3: Salva o estado local no Provider
     final provider = context.read<OnboardingProvider>();
     provider.setMealCount(_currentMealCount);
 
@@ -78,10 +79,10 @@ class _MealRoutineScreenState extends State<MealRoutineScreen> {
       parameters: {'meal_count': _currentMealCount},
     );
 
-    // V3: Navegação
+    // V3: Navegação para a próxima tela (Food Preferences, 14/15)
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => const FoodPreferencesScreen(), // Navega para 1.16
+        builder: (context) => const FoodPreferencesScreen(),
       ),
     );
   }
@@ -91,47 +92,76 @@ class _MealRoutineScreenState extends State<MealRoutineScreen> {
     final theme = Theme.of(context);
     final textTheme = theme.textTheme;
 
-    // Lógica V1 mantida: Esta tela é opcional, o botão está sempre ativo.
-    // const bool canContinue = true; // [CORREÇÃO] Variável agora é desnecessária
-
     return Scaffold(
-      // 1. AppBar V3 (Padrão)
-      appBar: const _OnboardingAppBar(progress: 11 / 13),
-      body: Column(
-        children: [
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const SizedBox(height: 16),
-                  // 4. Título (V3)
-                  Text(
-                    "Quantas refeições você faz por dia?",
-                    style: textTheme.headlineMedium,
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 64), // Mais espaço (V1)
+      // 1. AppBar removido
+      appBar: null,
 
-                  // 5. Input V3 (Ruler Picker)
-                  // (Descarta _Slider V1)
-                  _buildMealRuler(theme),
-
-                  const SizedBox(height: 96), // Espaço para o botão
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-      // 7. Botão de Ação (Inferior Fixo - V3 UI)
+      // 2. Botão de Ação (Inferior Fixo - V3 UI)
       bottomNavigationBar: Padding(
         padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
         child: ElevatedButton(
-          // [CORREÇÃO] 1. Removido 'canContinue ? ... : null' (dead_code)
+          // O botão é sempre ativo (lógica original)
           onPressed: _onNext,
           child: const Text('Continuar'),
+        ),
+      ),
+
+      // 3. Body para a barra de navegação customizada e conteúdo
+      body: SafeArea(
+        child: Column(
+          children: [
+            // BARRA DE PROGRESSO E BOTÃO DE VOLTAR (Passo 13/15)
+            Padding(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+              child: Row(
+                children: [
+                  GestureDetector(
+                    onTap: () => Navigator.of(context).pop(),
+                    child: Icon(Icons.arrow_back,
+                        color: theme.colorScheme.onSurface),
+                  ),
+                  const SizedBox(width: 16),
+                  const Expanded(
+                    // Progress bar: 13/15
+                    child: PremiumProgressBar(progress: 13 / 17),
+                  ),
+                ],
+              ),
+            ),
+
+            // CONTEÚDO ROLÁVEL
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const SizedBox(height: 16),
+                    // 4. Título (Copywriting Aprimorado)
+                    Text(
+                      "Quantas refeições você pretende fazer por dia?",
+                      style: theme.textTheme.headlineMedium,
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 12),
+                    // 5. Subtítulo (Copywriting Aprimorado)
+                    Text(
+                      "O seu plano de nutrição será adaptado para o seu número de REFEIÇÕES preferido, otimizando o planejamento calórico e o timing de macronutrientes.",
+                      style: theme.textTheme.bodyMedium,
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 64),
+
+                    // 6. Input V3 (Ruler Picker)
+                    _buildMealRuler(theme),
+
+                    const SizedBox(height: 96),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -147,7 +177,7 @@ class _MealRoutineScreenState extends State<MealRoutineScreen> {
           // O PageView com os números
           PageView.builder(
             controller: _pageController,
-            itemCount: _totalMeals, // 3, 4, 5, 6 (4 itens)
+            itemCount: _totalMeals,
             onPageChanged: (int pageIndex) {
               final int mealValue = pageIndex + _minMeals;
               if (_currentMealCount != mealValue) {
@@ -194,11 +224,11 @@ class _MealRoutineScreenState extends State<MealRoutineScreen> {
             ),
           ),
 
-          // O subtítulo "refeições" (V3: Dourado)
+          // O subtítulo "REFEIÇÕES" (V3: Dourado - AGORA EM MAIÚSCULAS)
           Positioned(
             top: 0,
             child: Text(
-              "refeições",
+              "REFEIÇÕES", // CAPITALIZAÇÃO CORRIGIDA
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.primary,
                 fontWeight: FontWeight.w600,
@@ -209,38 +239,4 @@ class _MealRoutineScreenState extends State<MealRoutineScreen> {
       ),
     );
   }
-}
-
-// ---
-// V3: Widget de AppBar Consistente
-// (Padrão V3)
-// ---
-class _OnboardingAppBar extends StatelessWidget implements PreferredSizeWidget {
-  final double progress;
-
-  const _OnboardingAppBar({required this.progress});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return AppBar(
-      leading: const BackButton(),
-      title: Text(
-        "Etapa ${(progress * 13).round()} de 13",
-        style: theme.appBarTheme.titleTextStyle,
-      ),
-      bottom: PreferredSize(
-        preferredSize: const Size.fromHeight(4.0),
-        child: LinearProgressIndicator(
-          value: progress,
-          backgroundColor: theme.colorScheme.surfaceContainer,
-          valueColor: AlwaysStoppedAnimation<Color>(theme.colorScheme.primary),
-        ),
-      ),
-    );
-  }
-
-  @override
-  Size get preferredSize => const Size.fromHeight(kToolbarHeight + 4.0);
 }

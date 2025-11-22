@@ -33,6 +33,9 @@ class _TargetWeightScreenState extends State<TargetWeightScreen> {
   final int _maxWeight = 150;
   late final int _itemCount;
 
+  // Corrigido: Para usar o contexto do State e não o do Widget
+  late final OnboardingProvider _provider;
+
   @override
   void initState() {
     super.initState();
@@ -43,11 +46,11 @@ class _TargetWeightScreenState extends State<TargetWeightScreen> {
     });
 
     // V3 (CORRIGIDO): Usa os dados corretos do provider
-    final provider = context.read<OnboardingProvider>();
+    _provider = context.read<OnboardingProvider>();
     // Arredonda para o inteiro mais próximo
-    _currentWeight = provider.data.currentWeight?.round() ?? 70;
+    _currentWeight = _provider.data.currentWeight?.round() ?? 70;
     _currentTargetWeight =
-        provider.data.targetWeight?.round() ?? _currentWeight;
+        _provider.data.targetWeight?.round() ?? _currentWeight;
 
     // V3 (PONTO 4 - Régua): Lógica de inteiros
     _itemCount = (_maxWeight - _minWeight) + 1; // Ex: 150 - 40 + 1 = 111 itens
@@ -72,7 +75,8 @@ class _TargetWeightScreenState extends State<TargetWeightScreen> {
 
   void _onNext() {
     HapticService.mediumImpact();
-    final provider = context.read<OnboardingProvider>();
+    // Usando a variável de estado para acessar o provider
+    final provider = _provider;
 
     // Salva o peso-alvo (como double, conforme o model)
     provider.setTargetWeight(_currentTargetWeight.toDouble());
@@ -108,63 +112,84 @@ class _TargetWeightScreenState extends State<TargetWeightScreen> {
     );
 
     return Scaffold(
-      appBar: AppBar(
-        // V3 (PONTO 2): "Etapa" removido
-        title: null,
-        // V3 (PONTO 3): Nova barra de progresso
-        bottom: const PreferredSize(
-          preferredSize: Size.fromHeight(8.0),
-          child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: 24.0),
-            child: PremiumProgressBar(progress: 3 / 13),
-          ),
+      // 1. AppBar removido para controle total da barra de navegação
+      appBar: null,
+
+      // 2. Botão de Continuação fixado no rodapé
+      bottomNavigationBar: Padding(
+        padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
+        child: ElevatedButton(
+          onPressed: _onNext,
+          child: const Text('Continuar'),
         ),
       ),
-      // V3 (PONTO 15): Adiciona SingleChildScrollView
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 24.0),
+
+      // 3. Body para o conteúdo e barra de progresso customizada
+      body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const SizedBox(height: 16),
-            Text(
-              "Qual é o seu peso-alvo?",
-              style: textTheme.headlineMedium,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 12),
-            Text(
-              "Ajuste a régua para definir sua meta.",
-              style: textTheme.bodyMedium,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 48),
-
-            // V3 (PONTO 4 - Régua): Ruler Picker com valores cheios
-            _buildWeightRuler(theme),
-
-            const SizedBox(height: 24),
-
-            // V3 (PONTO 4 - Feedback): Cartão de Feedback Dinâmico
-            // V3 (CORREÇÃO): Usa o novo AiFeedbackCard importado
-            AiFeedbackCard(
-              message: _getFeedbackMessage(
-                  objective: provider.data.objective,
-                  currentWeight: _currentWeight,
-                  targetWeight: _currentTargetWeight,
-                  state: feedbackState),
-              state: feedbackState, // Passa o estado da cor
+            // BARRA DE PROGRESSO E BOTÃO DE VOLTAR
+            Padding(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+              child: Row(
+                children: [
+                  GestureDetector(
+                    onTap: () => Navigator.of(context).pop(),
+                    child: Icon(Icons.arrow_back,
+                        color: theme.colorScheme.onSurface),
+                  ),
+                  const SizedBox(width: 16),
+                  const Expanded(
+                    child: PremiumProgressBar(progress: 3 / 17),
+                  ),
+                ],
+              ),
             ),
 
-            const SizedBox(height: 40), // Espaço antes do botão
+            // CONTEÚDO ROLÁVEL
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const SizedBox(height: 16),
+                    Text(
+                      "Qual é o seu peso-alvo?",
+                      style: textTheme.headlineMedium,
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      "Ajuste a régua para definir sua meta.",
+                      style: textTheme.bodyMedium,
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 48),
 
-            // V3 (PONTO 15): Botão movido para dentro do Scroll
-            ElevatedButton(
-              onPressed: _onNext,
-              // V3 (PONTO 5): Botão de ação com texto centralizado (Correto)
-              child: const Text('Continuar'),
+                    // V3 (PONTO 4 - Régua): Ruler Picker com valores cheios
+                    _buildWeightRuler(theme),
+
+                    const SizedBox(height: 24),
+
+                    // V3 (PONTO 4 - Feedback): Cartão de Feedback Dinâmico
+                    AiFeedbackCard(
+                      message: _getFeedbackMessage(
+                          objective: provider.data.objective,
+                          currentWeight: _currentWeight,
+                          targetWeight: _currentTargetWeight,
+                          state: feedbackState),
+                      state: feedbackState, // Passa o estado da cor
+                    ),
+
+                    // O espaço que antes era ocupado pelo botão:
+                    const SizedBox(height: 40),
+                  ],
+                ),
+              ),
             ),
-            const SizedBox(height: 40), // Espaço de fim de scroll
           ],
         ),
       ),
@@ -346,6 +371,3 @@ String _getFeedbackMessage({
   }
   return "Feedback da IA aparecerá aqui.";
 }
-
-// V3 (CORREÇÃO): O widget _DynamicFeedbackCard foi removido daqui
-// e substituído pelo AiFeedbackCard importado.

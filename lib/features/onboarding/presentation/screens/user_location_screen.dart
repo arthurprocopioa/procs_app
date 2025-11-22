@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-// Importa a nova tela de localização do usuário
-import 'user_location_screen.dart';
+import 'loading_diet_plan_screen.dart'; // Próximo destino (Loading)
 // ---
 // IMPORTS V3 (Fundação)
 // ---
@@ -12,43 +11,52 @@ import '../../application/onboarding_provider.dart';
 import '../widgets/premium_progress_bar.dart';
 import '../widgets/premium_selection_card.dart';
 
-/// Tela 1.17: O usuário informa interesse em suplementação (Passo 14/15).
-class SupplementsScreen extends StatefulWidget {
-  const SupplementsScreen({super.key});
+/// NOVA TELA (Passo 15/15): O usuário informa a região do Brasil para otimizar a dieta.
+/// REFACTOR: Última etapa de coleta, ajustada para UX premium.
+class UserLocationScreen extends StatefulWidget {
+  const UserLocationScreen({super.key});
 
   @override
-  State<SupplementsScreen> createState() => _SupplementsScreenState();
+  State<UserLocationScreen> createState() => _UserLocationScreenState();
 }
 
-class _SupplementsScreenState extends State<SupplementsScreen> {
+class _UserLocationScreenState extends State<UserLocationScreen> {
+  // Mapa das Regiões Brasileiras
+  final Map<String, String> _regionOptions = {
+    'sudeste': 'Sudeste',
+    'sul': 'Sul',
+    'centro_oeste': 'Centro-Oeste',
+    'norte': 'Norte',
+    'nordeste': 'Nordeste',
+  };
+
   @override
   void initState() {
     super.initState();
-    // V3: Analytics
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<AnalyticsService>(context, listen: false)
-          .trackScreenView('supplements');
+          .trackScreenView('user_location');
     });
   }
 
-  /// V3: Ação de 'Finalizar'
+  /// Ação de 'Próximo'
   void _onNext() {
-    // O valor já está salvo no Provider via onTap dos cards.
     final provider = context.read<OnboardingProvider>();
+    final selectedRegion = provider.data.userRegion;
 
-    // V3: Haptics (Impacto pesado para indicar o fim de uma fase)
+    if (selectedRegion == null) return;
+
     HapticService.heavyImpact();
 
-    // V3: Analytics
     context.read<AnalyticsService>().trackEvent(
-      'onboarding_supplements_set',
-      parameters: {'interest': provider.data.interestInSupplements},
+      'onboarding_region_set',
+      parameters: {'region': selectedRegion},
     );
 
-    // V3: Navegação CORRIGIDA para a NOVA TELA (User Location, 15/15)
+    // Navega para a tela de Loading da Dieta
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => const UserLocationScreen(),
+        builder: (context) => const LoadingDietPlanScreen(),
       ),
     );
   }
@@ -58,31 +66,29 @@ class _SupplementsScreenState extends State<SupplementsScreen> {
     final theme = Theme.of(context);
     final textTheme = theme.textTheme;
     final provider = context.watch<OnboardingProvider>();
-    final selectedInterest = provider.data.interestInSupplements;
+    final selectedRegion = provider.data.userRegion;
 
-    // O botão só é habilitado se o interesse for definido (true ou false)
-    final bool canContinue = selectedInterest != null;
+    // O botão só é habilitado se uma região for selecionada
+    final bool canContinue = selectedRegion != null;
 
     return Scaffold(
-      // 1. AppBar removido
       appBar: null,
 
-      // 2. Botão de Ação (Inferior Fixo - V3 UI)
+      // Botão de Ação (Inferior Fixo - V3 UI)
       bottomNavigationBar: Padding(
         padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
         child: ElevatedButton(
           onPressed: canContinue ? _onNext : null,
-          // 3. Texto do botão alterado para "Finalizar"
-          child: const Text('Finalizar'),
+          child: const Text('Continuar'),
         ),
       ),
 
-      // 4. Body para a barra de navegação customizada e conteúdo
+      // Body para a barra de navegação customizada e conteúdo
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // BARRA DE PROGRESSO E BOTÃO DE VOLTAR (Passo 14/15)
+            // BARRA DE PROGRESSO E BOTÃO DE VOLTAR (Passo 15/15)
             Padding(
               padding:
                   const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
@@ -95,8 +101,8 @@ class _SupplementsScreenState extends State<SupplementsScreen> {
                   ),
                   const SizedBox(width: 16),
                   const Expanded(
-                    // Progress bar: 14/15
-                    child: PremiumProgressBar(progress: 15 / 16),
+                    // Progress bar: 15/15 (Completa!)
+                    child: PremiumProgressBar(progress: 16 / 17),
                   ),
                 ],
               ),
@@ -112,40 +118,36 @@ class _SupplementsScreenState extends State<SupplementsScreen> {
                     const SizedBox(height: 32),
                     // Título (V3)
                     Text(
-                      "Interesse em suplementação?",
+                      "Qual é a sua região no Brasil?",
                       style: textTheme.headlineMedium,
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 12),
                     // Subtítulo (V3)
                     Text(
-                      "O Procs AI pode oferecer sugestões educacionais (sem marcas ou dosagens) para otimizar seus resultados.",
+                      "Isso nos ajuda a montar sua dieta com ingredientes regionalmente disponíveis e com preços mais acessíveis.",
                       style: theme.textTheme.bodyMedium,
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 48),
 
                     // V3: Cards de Seleção (Design Dourado - PremiumSelectionCard)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 16),
-                      child: PremiumSelectionCard(
-                        text: "Sim, estou aberto(a) a sugestões",
-                        isSelected: selectedInterest == true,
-                        onTap: () {
-                          HapticService.lightImpact();
-                          provider.setInterestInSupplements(true);
-                        },
-                      ),
-                    ),
+                    ..._regionOptions.entries.map((entry) {
+                      final key = entry.key;
+                      final text = entry.value;
 
-                    PremiumSelectionCard(
-                      text: "Não, prefiro focar 100% na alimentação",
-                      isSelected: selectedInterest == false,
-                      onTap: () {
-                        HapticService.lightImpact();
-                        provider.setInterestInSupplements(false);
-                      },
-                    ),
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8.0),
+                        child: PremiumSelectionCard(
+                          text: text,
+                          isSelected: selectedRegion == key,
+                          onTap: () {
+                            HapticService.lightImpact();
+                            provider.setUserRegion(key);
+                          },
+                        ),
+                      );
+                    }).toList(),
 
                     const SizedBox(height: 96),
                   ],

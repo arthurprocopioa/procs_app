@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'loading_train_plan_screen.dart'; // Próxima tela (1.13)
+// Importa a nova tela de tempo de treino
+// CORRIGIDO: Garantindo que o caminho e o nome estejam corretos.
+import 'training_time_screen.dart';
 // ---
 // IMPORTS V3 (Fundação e Novos Widgets)
 // ---
@@ -12,10 +13,11 @@ import '../widgets/premium_progress_bar.dart';
 import '../widgets/premium_selection_card.dart';
 // V3 (CORREÇÃO): Importa o widget de feedback centralizado
 import '../widgets/ai_feedback_card.dart';
+// Para acessar o enum FeedbackState
+import '../widgets/ai_feedback_card.dart';
 
 /// V3 (PONTO 9): Tela de Cardio
-/// Refatorada para a nova UX de 3 etapas (Preferência -> Tipo -> Agenda)
-/// e para usar o Data Model e Provider do Sprint 1.
+/// Refatorada para o novo padrão de UX (Barra no topo, Botão no rodapé)
 class CardioScreen extends StatefulWidget {
   const CardioScreen({super.key});
 
@@ -47,6 +49,9 @@ class _CardioScreenState extends State<CardioScreen> {
     7: '7x',
   };
 
+  // Foco para fechar o teclado do campo "Outros" de forma segura
+  final FocusNode _otherCardioFocusNode = FocusNode();
+
   @override
   void initState() {
     super.initState();
@@ -63,6 +68,7 @@ class _CardioScreenState extends State<CardioScreen> {
   @override
   void dispose() {
     _otherCardioController.dispose();
+    _otherCardioFocusNode.dispose();
     super.dispose();
   }
 
@@ -73,6 +79,9 @@ class _CardioScreenState extends State<CardioScreen> {
     HapticService.mediumImpact();
     final provider = context.read<OnboardingProvider>();
     final data = provider.data;
+
+    // Fecha o teclado antes de navegar (segurança contra bugs)
+    FocusScope.of(context).unfocus();
 
     // V3 (PONTO 9a.I): Salva o "Outros" se estiver selecionado
     if (data.cardioType == 'outros') {
@@ -92,18 +101,26 @@ class _CardioScreenState extends State<CardioScreen> {
       },
     );
 
-    // Navega para a próxima tela
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => const LoadingTrainPlanScreen(), // 1.13
-      ),
-    );
+    try {
+      // Navega para a nova tela de Tempo de Treino (Passo 10/15)
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => const TrainingTimeScreen(),
+        ),
+      );
+    } catch (e) {
+      // Loga o erro de navegação para depuração
+      debugPrint('ERRO CRÍTICO DE NAVEGAÇÃO NA CARDIO SCREEN: $e');
+      // Você deve ver esta mensagem no console se o problema persistir.
+    }
   }
 
   // V3 (PONTO 9): Lógica de ativação do botão "Continuar"
   bool _getCanContinue(OnboardingProvider provider) {
     final data = provider.data;
     final preference = data.cardioPreference;
+
+    if (preference == null) return false;
 
     if (preference == 'nao' || preference == 'ia_decide') {
       return true;
@@ -143,52 +160,78 @@ class _CardioScreenState extends State<CardioScreen> {
     final bool canContinue = _getCanContinue(provider);
 
     return Scaffold(
-      appBar: AppBar(
-        // V3 (PONTO 2): "Etapa" removido
-        title: null,
-        // V3 (PONTO 3): Nova barra de progresso
-        bottom: const PreferredSize(
-          preferredSize: Size.fromHeight(8.0),
-          child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: 24.0),
-            child: PremiumProgressBar(progress: 9 / 13),
-          ),
+      // 1. AppBar removido
+      appBar: null,
+
+      // 2. Botão de Continuação fixado no rodapé
+      bottomNavigationBar: Padding(
+        padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
+        child: ElevatedButton(
+          onPressed: canContinue ? _onNext : null,
+          child: const Text('Continuar'),
         ),
       ),
-      // V3 (PONTO 15): Adiciona SingleChildScrollView
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 24.0),
+
+      // 3. Body para a barra de navegação customizada e conteúdo
+      body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const SizedBox(height: 16),
-            // V3 (PONTO 9a): Novo título
-            Text(
-              "Você deseja adicionar cardio ao seu treino? (Caminhada, corrida, bicicleta, etc)",
-              style: textTheme.headlineMedium,
-              textAlign: TextAlign.center,
+            // BARRA DE PROGRESSO E BOTÃO DE VOLTAR (Passo 9/15)
+            Padding(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+              child: Row(
+                children: [
+                  GestureDetector(
+                    onTap: () => Navigator.of(context).pop(),
+                    child: Icon(Icons.arrow_back,
+                        color: theme.colorScheme.onSurface),
+                  ),
+                  const SizedBox(width: 16),
+                  const Expanded(
+                    // Progress bar: 9/15
+                    child: PremiumProgressBar(progress: 9 / 17),
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(height: 32),
 
-            // --- V3 (PONTO 9): PASSO 1: Preferência ---
-            _buildStep1Preference(context, provider),
+            // CONTEÚDO ROLÁVEL
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const SizedBox(height: 16),
+                    // V3 (PONTO 9a): Novo título
+                    Text(
+                      "Você deseja adicionar cardio ao seu treino? (Caminhada, corrida, bicicleta, etc)",
+                      style: textTheme.headlineMedium,
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 32),
 
-            // --- V3 (PONTO 9c): Feedback da IA ---
-            _buildStep1AiFeedback(context, data.cardioPreference),
+                    // --- V3 (PONTO 9): PASSO 1: Preferência ---
+                    _buildStep1Preference(context, provider),
+                    const SizedBox(height: 24),
 
-            // --- V3 (PONTO 9a.I): PASSO 2: Tipo de Cardio ---
-            _buildStep2CardioType(context, provider),
+                    // --- V3 (PONTO 9c): Feedback da IA (VISÍVEL SEMPRE) ---
+                    _buildStep1AiFeedback(context),
+                    const SizedBox(height: 16),
 
-            // --- V3 (PONTO 9a.II): PASSO 3: Agenda do Cardio ---
-            _buildStep3CardioSchedule(context, provider),
+                    // --- V3 (PONTO 9a.I): PASSO 2: Tipo de Cardio ---
+                    _buildStep2CardioType(context, provider),
 
-            const SizedBox(height: 40),
-            // V3 (PONTO 15): Botão dentro do scroll
-            ElevatedButton(
-              onPressed: canContinue ? _onNext : null,
-              child: const Text('Continuar'),
+                    // --- V3 (PONTO 9a.II): PASSO 3: Agenda do Cardio ---
+                    _buildStep3CardioSchedule(context, provider),
+
+                    const SizedBox(height: 40),
+                  ],
+                ),
+              ),
             ),
-            const SizedBox(height: 40),
           ],
         ),
       ),
@@ -206,6 +249,7 @@ class _CardioScreenState extends State<CardioScreen> {
           onTap: () {
             HapticService.lightImpact();
             provider.setCardioPreference('sim');
+            _otherCardioFocusNode.unfocus(); // Fecha teclado se estiver aberto
           },
         ),
         const SizedBox(height: 16),
@@ -215,6 +259,7 @@ class _CardioScreenState extends State<CardioScreen> {
           onTap: () {
             HapticService.lightImpact();
             provider.setCardioPreference('nao');
+            _otherCardioFocusNode.unfocus();
           },
         ),
         const SizedBox(height: 16),
@@ -224,33 +269,25 @@ class _CardioScreenState extends State<CardioScreen> {
           onTap: () {
             HapticService.lightImpact();
             provider.setCardioPreference('ia_decide');
+            _otherCardioFocusNode.unfocus();
           },
         ),
       ],
     );
   }
 
-  // V3 (PONTO 9c): Widget para o Feedback da IA
-  Widget _buildStep1AiFeedback(BuildContext context, String? preference) {
+  // V3 (PONTO 9c): Widget para o Feedback da IA (AGORA É SEMPRE VISÍVEL)
+  Widget _buildStep1AiFeedback(BuildContext context) {
     // V3: Copy que você pediu
     const String feedbackMessage =
         "Deixe o Procs AI decidir. Nossa IA analisará seu objetivo (ex: 'Ganhar Músculo') e seu progresso para determinar se o cardio é ideal para você, ajustando a frequência e intensidade para otimizar seus resultados sem prejudicar sua recuperação.";
 
-    return AnimatedOpacity(
-      opacity: preference == 'ia_decide' ? 1.0 : 0.0,
-      duration: const Duration(milliseconds: 300),
-      child: Visibility(
-        visible: preference == 'ia_decide',
-        child: Padding(
-          padding: const EdgeInsets.only(top: 24.0),
-          // V3 (CORREÇÃO): Usa o novo AiFeedbackCard importado
-          child: AiFeedbackCard(
-            title: "Decisão da IA",
-            message: feedbackMessage,
-            state: FeedbackState.success, // Sempre 'success' (dourado)
-          ),
-        ),
-      ),
+    // CORREÇÃO: Removido o AnimatedOpacity/Visibility
+    return AiFeedbackCard(
+      title: "Decisão da IA",
+      message: feedbackMessage,
+      state: FeedbackState
+          .neutral, // Neutro (agora com brilho) para ser sempre visível e informativo
     );
   }
 
@@ -317,12 +354,16 @@ class _CardioScreenState extends State<CardioScreen> {
                           padding: const EdgeInsets.only(top: 16.0),
                           child: TextField(
                             controller: _otherCardioController,
+                            focusNode:
+                                _otherCardioFocusNode, // Adicionado FocusNode
                             decoration: const InputDecoration(
                               labelText: 'Qual outro cardio?',
                             ),
-                            // V3 (PONTO 13): "OK"
+                            // CORREÇÃO: Ação para OK/Concluir
                             textInputAction: TextInputAction.done,
-                            onSubmitted: (_) => _onNext(),
+                            onSubmitted: (_) {
+                              _otherCardioFocusNode.unfocus();
+                            },
                             onChanged: (text) {
                               // V3: Atualiza o provider "ao vivo"
                               provider.setCardioType('outros',
@@ -423,10 +464,9 @@ class _CardioScreenState extends State<CardioScreen> {
             final text = _cardioScheduleDays.values.elementAt(index);
             final isSelected = data.cardioDaysOfWeek.contains(key);
 
-            // V3 (PONTO 7): Reutiliza o `PremiumSelectionCard`
-            return PremiumSelectionCard(
+            // Usa o PremiumSelectionCard de seleção múltipla (como na ScheduleScreen)
+            return _CardioDaySelectionCard(
               text: text,
-              textAlign: TextAlign.center, // Centraliza no grid
               isSelected: isSelected,
               onTap: () {
                 HapticService.lightImpact();
@@ -442,36 +482,90 @@ class _CardioScreenState extends State<CardioScreen> {
     if (data.cardioScheduleMode == 'times_per_week') {
       return Padding(
         padding: const EdgeInsets.only(top: 16.0),
-        child: GridView.builder(
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 4, // 4 colunas
-            childAspectRatio: 1.2,
-            mainAxisSpacing: 8,
-            crossAxisSpacing: 8,
-          ),
-          itemCount: _cardioScheduleTimes.length,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemBuilder: (context, index) {
-            final key = _cardioScheduleTimes.keys.elementAt(index);
-            final text = _cardioScheduleTimes.values.elementAt(index);
+        child: Column(
+          // Usando Column para melhor UX do PremiumSelectionCard
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: _cardioScheduleTimes.entries.map((entry) {
+            final key = entry.key;
+            final text = entry.value;
             final isSelected = data.cardioTimesPerWeek == key;
 
-            return PremiumSelectionCard(
-              text: text,
-              textAlign: TextAlign.center,
-              isSelected: isSelected,
-              onTap: () {
-                HapticService.lightImpact();
-                provider.setCardioTimesPerWeek(key);
-              },
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6.0),
+              child: PremiumSelectionCard(
+                text: text,
+                isSelected: isSelected,
+                onTap: () {
+                  HapticService.lightImpact();
+                  provider.setCardioTimesPerWeek(key);
+                },
+              ),
             );
-          },
+          }).toList(),
         ),
       );
     }
 
     // Vazio se 'on_days' ou null
     return const SizedBox.shrink();
+  }
+}
+
+/// NOVO WIDGET: Card de Seleção Múltipla para Cardio (dias da semana)
+/// Reutiliza a lógica minimalista de seleção que você aprovou (borda amarela).
+class _CardioDaySelectionCard extends StatelessWidget {
+  final String text;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _CardioDaySelectionCard({
+    required this.text,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 20),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? colorScheme.primary.withOpacity(0.1)
+              : theme.cardTheme.color,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected
+                ? colorScheme.primary
+                : theme.colorScheme.surfaceContainer,
+            width: isSelected ? 2.0 : 1.0,
+          ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: colorScheme.primary.withOpacity(0.15),
+                    blurRadius: 8.0,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : [],
+        ),
+        child: Center(
+          child: Text(
+            text,
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+              color: isSelected ? colorScheme.primary : colorScheme.onSurface,
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }

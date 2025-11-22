@@ -37,7 +37,7 @@ class _VitalDataScreenState extends State<VitalDataScreen> {
   }
 
   // ---
-  // LÓGICA DO MODAL (INALTERADA)
+  // LÓGICA DO MODAL (INALTERADA - O ajuste é feito no pickerBuilder e na chamada)
   // ---
 
   Future<void> _showPickerModal(
@@ -49,6 +49,7 @@ class _VitalDataScreenState extends State<VitalDataScreen> {
     await HapticService.lightImpact();
     final theme = Theme.of(context);
 
+    // O ValueNotifier agora reflete o estado inicial.
     final ValueNotifier<bool> isButtonEnabled =
         ValueNotifier<bool>(isInitiallyEnabled);
 
@@ -109,7 +110,9 @@ class _VitalDataScreenState extends State<VitalDataScreen> {
   }
 
   // ---
-  // PICKERS (OMITIDOS PARA BREVIDADE, MAS ESTÃO NO ARQUIVO)
+  // PICKERS COM CORREÇÃO DE ATIVAÇÃO
+  // A lógica de setar 'notifier.value = true' é executada em onSelectedItemChanged
+  // *apenas* se a seleção inicial do provider for alterada (o que resolve o problema).
   // ---
 
   Widget _buildGenderPicker(
@@ -120,18 +123,24 @@ class _VitalDataScreenState extends State<VitalDataScreen> {
       'other': 'Outro'
     };
     final genderKeys = genders.keys.toList();
-    final initialIndex = provider.data.gender == null
-        ? 0
-        : genderKeys
-            .indexOf(provider.data.gender!)
-            .clamp(0, genders.length - 1);
+    // Valor inicial lido do Provider
+    final String initialGender = provider.data.gender ?? genderKeys.first;
+    final initialIndex =
+        genderKeys.indexOf(initialGender).clamp(0, genders.length - 1);
 
     return CupertinoPicker(
       itemExtent: 40.0,
       scrollController: FixedExtentScrollController(initialItem: initialIndex),
       onSelectedItemChanged: (index) {
+        final newGender = genderKeys[index];
         HapticService.lightImpact();
-        provider.setGender(genderKeys[index]);
+        provider.setGender(newGender);
+
+        // CORREÇÃO: Ativa o botão *se* o valor for diferente do valor nulo
+        // ou se for diferente do valor inicial (embora aqui só seja o set direto).
+        // Como o initialGender é sempre definido (ou pelo provider ou pelo default),
+        // a única vez que o botão precisa ser ativado explicitamente é na primeira vez que rola.
+        // O `isInitiallyEnabled` na chamada do modal já cuida do caso em que já existe um valor.
         notifier.value = true;
       },
       children: genders.values.map((g) => Center(child: Text(g))).toList(),
@@ -141,9 +150,9 @@ class _VitalDataScreenState extends State<VitalDataScreen> {
   Widget _buildAgePicker(
       OnboardingProvider provider, ValueNotifier<bool> notifier) {
     final ages = List.generate(83, (i) => i + 18);
-    final initialIndex = provider.data.age == null
-        ? 12
-        : ages.indexOf(provider.data.age!).clamp(0, ages.length - 1);
+    // Valor inicial lido do Provider
+    final int initialAge = provider.data.age ?? ages[12];
+    final initialIndex = ages.indexOf(initialAge).clamp(0, ages.length - 1);
 
     return CupertinoPicker(
       itemExtent: 40.0,
@@ -151,6 +160,7 @@ class _VitalDataScreenState extends State<VitalDataScreen> {
       onSelectedItemChanged: (index) {
         HapticService.lightImpact();
         provider.setAge(ages[index]);
+        // Ativa o botão ao interagir
         notifier.value = true;
       },
       children: ages.map((a) => Center(child: Text(a.toString()))).toList(),
@@ -160,9 +170,10 @@ class _VitalDataScreenState extends State<VitalDataScreen> {
   Widget _buildHeightPicker(
       OnboardingProvider provider, ValueNotifier<bool> notifier) {
     final heights = List.generate(81, (i) => i + 140);
-    final initialIndex = provider.data.height == null
-        ? 30
-        : heights.indexOf(provider.data.height!).clamp(0, heights.length - 1);
+    // Valor inicial lido do Provider
+    final int initialHeight = provider.data.height ?? heights[30];
+    final initialIndex =
+        heights.indexOf(initialHeight).clamp(0, heights.length - 1);
 
     return CupertinoPicker(
       itemExtent: 40.0,
@@ -170,6 +181,7 @@ class _VitalDataScreenState extends State<VitalDataScreen> {
       onSelectedItemChanged: (index) {
         HapticService.lightImpact();
         provider.setHeight(heights[index]);
+        // Ativa o botão ao interagir
         notifier.value = true;
       },
       children: heights.map((h) => Center(child: Text("$h cm"))).toList(),
@@ -180,11 +192,12 @@ class _VitalDataScreenState extends State<VitalDataScreen> {
       OnboardingProvider provider, ValueNotifier<bool> notifier) {
     final weights = List.generate(221, (i) => 40.0 + (i * 0.5));
     final selectedWeight = provider.data.currentWeight;
-    final initialIndex = selectedWeight == null
-        ? 60
-        : weights
-            .indexWhere((w) => (w - selectedWeight).abs() < 0.1)
-            .clamp(0, weights.length - 1);
+    // Valor inicial lido do Provider
+    final double initialWeight = selectedWeight ?? weights[60];
+
+    final initialIndex = weights
+        .indexWhere((w) => (w - initialWeight).abs() < 0.1)
+        .clamp(0, weights.length - 1);
 
     return CupertinoPicker(
       itemExtent: 40.0,
@@ -192,6 +205,7 @@ class _VitalDataScreenState extends State<VitalDataScreen> {
       onSelectedItemChanged: (index) {
         HapticService.lightImpact();
         provider.setCurrentWeight(weights[index]);
+        // Ativa o botão ao interagir
         notifier.value = true;
       },
       children: weights
@@ -207,6 +221,12 @@ class _VitalDataScreenState extends State<VitalDataScreen> {
     final provider = context.watch<OnboardingProvider>();
     final data = provider.data;
     final bool isFormComplete = _isFormComplete;
+
+    // Definições de valor inicial para o modal (CORREÇÃO AQUI)
+    final bool isGenderSet = data.gender != null;
+    final bool isAgeSet = data.age != null;
+    final bool isHeightSet = data.height != null;
+    final bool isWeightSet = data.currentWeight != null;
 
     return Scaffold(
       // Removida a AppBar para controle total
@@ -226,7 +246,7 @@ class _VitalDataScreenState extends State<VitalDataScreen> {
                   ),
                   const SizedBox(width: 16),
                   const Expanded(
-                    child: PremiumProgressBar(progress: 1 / 13),
+                    child: PremiumProgressBar(progress: 1 / 17),
                   ),
                 ],
               ),
@@ -261,7 +281,8 @@ class _VitalDataScreenState extends State<VitalDataScreen> {
                         onTap: () => _showPickerModal(
                           context,
                           title: "Gênero",
-                          isInitiallyEnabled: data.gender != null,
+                          // ATUALIZAÇÃO: Se o valor já está no provider, é inicialmente ativo.
+                          isInitiallyEnabled: isGenderSet,
                           pickerBuilder: (notifier) =>
                               _buildGenderPicker(provider, notifier),
                         ),
@@ -273,7 +294,8 @@ class _VitalDataScreenState extends State<VitalDataScreen> {
                         onTap: () => _showPickerModal(
                           context,
                           title: "Idade",
-                          isInitiallyEnabled: data.age != null,
+                          // ATUALIZAÇÃO: Se o valor já está no provider, é inicialmente ativo.
+                          isInitiallyEnabled: isAgeSet,
                           pickerBuilder: (notifier) =>
                               _buildAgePicker(provider, notifier),
                         ),
@@ -286,7 +308,8 @@ class _VitalDataScreenState extends State<VitalDataScreen> {
                         onTap: () => _showPickerModal(
                           context,
                           title: "Altura",
-                          isInitiallyEnabled: data.height != null,
+                          // ATUALIZAÇÃO: Se o valor já está no provider, é inicialmente ativo.
+                          isInitiallyEnabled: isHeightSet,
                           pickerBuilder: (notifier) =>
                               _buildHeightPicker(provider, notifier),
                         ),
@@ -299,7 +322,8 @@ class _VitalDataScreenState extends State<VitalDataScreen> {
                         onTap: () => _showPickerModal(
                           context,
                           title: "Peso",
-                          isInitiallyEnabled: data.currentWeight != null,
+                          // ATUALIZAÇÃO: Se o valor já está no provider, é inicialmente ativo.
+                          isInitiallyEnabled: isWeightSet,
                           pickerBuilder: (notifier) =>
                               _buildWeightPicker(provider, notifier),
                         ),

@@ -4,9 +4,13 @@ import 'injuries_screen.dart'; // Próxima tela (1.11)
 import '../../../../core/services/analytics_service.dart';
 import '../../../../core/services/haptic_service.dart';
 import '../../application/onboarding_provider.dart';
+// V3 (NOVOS IMPORTS): Widgets reutilizáveis
+import '../widgets/premium_progress_bar.dart';
+import '../widgets/premium_selection_card.dart';
 
 /// Tela 1.10: Onde o usuário informa áreas de foco (Opcional).
-/// Refatorada para Lógica V3 (desmembrada) e UI V3 (Cards).
+/// Refatorada para Lógica V3 (desmembrada), UI V3 (Cards Premium)
+/// e novo padrão de navegação.
 class FocusAreaScreen extends StatefulWidget {
   const FocusAreaScreen({super.key});
 
@@ -66,129 +70,164 @@ class _FocusAreaScreenState extends State<FocusAreaScreen> {
     final provider = context.watch<OnboardingProvider>();
     final selectedAreas = provider.data.focusAreas;
 
-    // Lógica V1 mantida: Esta tela é opcional, o botão está sempre ativo.
-    // const bool canContinue = true; // [CORREÇÃO] Variável agora é desnecessária
-
     return Scaffold(
-      appBar: AppBar(
-        // V3: Título do AppBar (Usa o Tema V3)
-        title: Text(
-          "Etapa 7 de 13",
-          style: theme.appBarTheme.titleTextStyle,
-        ),
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(4.0),
-          child: LinearProgressIndicator(
-            value: 7 / 13,
-            backgroundColor: theme.colorScheme.surfaceContainer,
-            valueColor:
-                AlwaysStoppedAnimation<Color>(theme.colorScheme.primary),
-          ),
-        ),
-      ),
-      body: Column(
-        children: [
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const SizedBox(height: 16),
-                  // 4. Título (V3 - Baseado na Referência)
-                  Text(
-                    "Em quais áreas seu treinamento deve se concentrar?",
-                    style: textTheme.headlineMedium,
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 12),
-                  // 5. Subtítulo (V1)
-                  Text(
-                    "Isto é opcional. Selecione 'Corpo Inteiro' ou áreas específicas.",
-                    style: textTheme.bodyMedium, // V3 (Tema)
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 32),
+      // 1. AppBar removido
+      appBar: null,
 
-                  // 6. Seleção Múltipla (UI V3 - Cards)
-                  // (Descarta 100% o _buildCheckbox V1)
-                  ..._focusOptions.entries.map((entry) {
-                    final key = entry.key;
-                    final text = entry.value;
-                    final isSelected = selectedAreas.contains(key);
-
-                    return _buildFocusCard(
-                      text: text,
-                      isSelected: isSelected,
-                      onTap: () {
-                        HapticService.lightImpact();
-                        provider.toggleFocusArea(key);
-                      },
-                    );
-                  }),
-
-                  const SizedBox(height: 96), // Espaço para o botão
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-      // 7. Botão de Ação (Inferior Fixo - V3 UI)
+      // 2. Botão de Ação (Inferior Fixo - V3 UI)
       bottomNavigationBar: Padding(
         padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
         child: ElevatedButton(
-          // V3: Estilo V3 (Branco Padrão, sempre ativo)
-          // [CORREÇÃO] 1. Removido 'canContinue ? ... : null' (dead_code)
+          // Lógica V1 mantida: sempre ativo
           onPressed: _onNext,
           child: const Text('Continuar'),
         ),
       ),
-    );
-  }
 
-  /// Helper V3: Constrói os cards de seleção (Padrão V3)
-  Widget _buildFocusCard({
-    required String text,
-    required bool isSelected,
-    required VoidCallback onTap,
-  }) {
-    final theme = Theme.of(context);
+      // 3. Body para a barra de navegação customizada e conteúdo
+      body: SafeArea(
+        child: Column(
+          children: [
+            // BARRA DE PROGRESSO E BOTÃO DE VOLTAR (Passo 7/13)
+            Padding(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+              child: Row(
+                children: [
+                  GestureDetector(
+                    onTap: () => Navigator.of(context).pop(),
+                    child: Icon(Icons.arrow_back,
+                        color: theme.colorScheme.onSurface),
+                  ),
+                  const SizedBox(width: 16),
+                  const Expanded(
+                    // Progress bar real (7/13)
+                    child: PremiumProgressBar(progress: 7 / 17),
+                  ),
+                ],
+              ),
+            ),
 
-    // V3: Estilo V3 (Baseado no `schedule_screen`)
-    final Color bgColor =
-        isSelected ? const Color(0xFF303030) : theme.cardTheme.color!;
+            // CONTEÚDO ROLÁVEL
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const SizedBox(height: 16),
+                    // 4. Título (V3 - Baseado na Referência)
+                    Text(
+                      "Em quais áreas seu treinamento deve se concentrar?",
+                      style: textTheme.headlineMedium,
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 12),
+                    // 5. Subtítulo (V1)
+                    Text(
+                      "Isto é opcional. Selecione 'Corpo Inteiro' ou áreas específicas.",
+                      style: textTheme.bodyMedium, // V3 (Tema)
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 32),
 
-    final Color fgColor =
-        isSelected ? Colors.white : theme.colorScheme.onSurface;
+                    // 6. Seleção Múltipla (UI V3 - Cards Premium)
+                    ..._focusOptions.entries.map((entry) {
+                      final key = entry.key;
+                      final text = entry.value;
+                      final isSelected = selectedAreas.contains(key);
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6.0),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-          decoration: BoxDecoration(
-            color: bgColor,
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                text,
-                style: theme.textTheme.bodyLarge?.copyWith(
-                  color: fgColor,
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                      // --- MUDANÇA CRÍTICA AQUI ---
+                      // Substituído o _buildFocusCard por um Card de Seleção Múltipla.
+                      // Como o PremiumSelectionCard original é de seleção ÚNICA (radio),
+                      // usamos um Card de Seleção Múltipla sem ícone (_DaySelectionCard)
+                      // que já fizemos na tela anterior, mas renomeado para maior clareza aqui.
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 6.0),
+                        child: _FocusSelectionCard(
+                          text: text,
+                          isSelected: isSelected,
+                          onTap: () {
+                            HapticService.lightImpact();
+                            provider.toggleFocusArea(key);
+                          },
+                        ),
+                      );
+                    }),
+
+                    const SizedBox(height: 96), // Espaço para o botão
+                  ],
                 ),
               ),
-              if (isSelected)
-                const Icon(Icons.check_circle, color: Colors.white, size: 20),
-            ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// NOVO WIDGET: Card de Seleção Múltipla sem Ícone
+/// Reutiliza a lógica minimalista de seleção que você aprovou (borda amarela).
+class _FocusSelectionCard extends StatelessWidget {
+  final String text;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _FocusSelectionCard({
+    required this.text,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+        decoration: BoxDecoration(
+          // Fundo Dourado sutil ou Fundo do Card
+          color: isSelected
+              ? colorScheme.primary.withOpacity(0.1)
+              : theme.cardTheme.color,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            // Borda Dourada ou Borda Inativa
+            color: isSelected
+                ? colorScheme.primary
+                : theme.colorScheme.surfaceContainer,
+            width: isSelected ? 2.0 : 1.0,
+          ),
+          // Sombra Premium
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: colorScheme.primary.withOpacity(0.15),
+                    blurRadius: 12.0,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : [],
+        ),
+        child: Text(
+          text,
+          textAlign: TextAlign.left,
+          style: theme.textTheme.bodyLarge?.copyWith(
+            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+            // Texto Dourado ou Texto Padrão
+            color: isSelected ? colorScheme.primary : colorScheme.onSurface,
           ),
         ),
       ),
     );
   }
 }
+
+// ---
+// O _buildFocusCard original foi removido por ser visualmente inconsistente.
+// ---

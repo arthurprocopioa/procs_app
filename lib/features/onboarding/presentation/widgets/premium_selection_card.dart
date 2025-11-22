@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 /// V3 (PONTO 7): O novo widget de Card de Seleção Premium.
 /// Substitui todos os botões de seleção customizados e inconsistentes.
-/// Garante o padrão "Dourado" ao invés de "check".
+/// Garante o padrão "Dourado" ao invés de "check" ou "radio".
 class PremiumSelectionCard extends StatelessWidget {
   final String text;
   final bool isSelected;
@@ -37,7 +37,7 @@ class PremiumSelectionCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: isSelected
-                ? colorScheme.primary
+                ? colorScheme.primary // Borda Dourada
                 : theme.colorScheme.surfaceContainer, // Borda inativa
             width: isSelected ? 2.0 : 1.0,
           ),
@@ -52,7 +52,8 @@ class PremiumSelectionCard extends StatelessWidget {
               : [], // Sem sombra
         ),
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          mainAxisAlignment:
+              MainAxisAlignment.start, // Alinhamento para o texto
           children: [
             Expanded(
               child: Text(
@@ -67,39 +68,9 @@ class PremiumSelectionCard extends StatelessWidget {
                 ),
               ),
             ),
-            // V3 (PONTO 7): Mostra o círculo dourado (estilo rádio)
-            // ao invés de um "check".
-            if (isSelected)
-              Container(
-                width: 20,
-                height: 20,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: colorScheme.primary,
-                  border: Border.all(color: Colors.black, width: 2),
-                ),
-                child: Center(
-                  child: Container(
-                    width: 8,
-                    height: 8,
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Colors.black,
-                    ),
-                  ),
-                ),
-              )
-            else
-              Container(
-                width: 20,
-                height: 20,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.transparent,
-                  border: Border.all(
-                      color: theme.colorScheme.surfaceContainer, width: 2),
-                ),
-              ),
+            // --- REMOVIDO: Ícone de Rádio (PONTO 7) ---
+            // O componente agora é 100% minimalista, dependendo apenas
+            // da borda e do texto dourado para feedback visual.
           ],
         ),
       ),

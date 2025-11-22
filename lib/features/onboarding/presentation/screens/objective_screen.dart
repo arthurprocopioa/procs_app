@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+// Removido: font_awesome_flutter (não é mais necessário)
 
 import '../../application/onboarding_provider.dart';
 import '../../../../core/services/analytics_service.dart';
+import '../../../../core/services/haptic_service.dart'; // V3: Haptics
+import '../widgets/premium_progress_bar.dart'; // V3: Novo Widget de Progresso
+import '../widgets/premium_selection_card.dart'; // V3: Novo Widget de Card
 import 'target_weight_screen.dart';
-// Removido: custom_selection_button.dart
-// Removido: app_theme.dart (cores estáticas não são mais necessárias)
 
 class ObjectiveScreen extends StatefulWidget {
   const ObjectiveScreen({super.key});
@@ -31,7 +33,7 @@ class _ObjectiveScreenState extends State<ObjectiveScreen> {
   // ---
   void _onNext(BuildContext context, String currentObjective) {
     // V3: Haptics
-    HapticFeedback.mediumImpact();
+    HapticService.mediumImpact();
 
     // V3: Analytics
     context.read<AnalyticsService>().trackEvent(
@@ -51,162 +53,102 @@ class _ObjectiveScreenState extends State<ObjectiveScreen> {
     final currentObjective = onboardingProvider.data.objective;
     final theme = Theme.of(context);
 
+    // ---
+    // V3 (CORREÇÃO): AppBar agora é nulo; usamos um Row customizado no Body
+    // ---
     return Scaffold(
-      // ---
-      // V3: AppBar com Progress Bar Tematizado (INTOCADO)
-      // ---
-      appBar: const _OnboardingAppBar(progress: 2 / 13),
-
-      body: Column(
-        children: [
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
+      body: SafeArea(
+        child: Column(
+          children: [
+            // 1. BARRA DE PROGRESSO E BOTÃO DE VOLTAR (FIXO NO TOPO)
+            Padding(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+              child: Row(
                 children: [
-                  // ---
-                  // V3: Título (Tematizado) (INTOCADO)
-                  // ---
-                  Text(
-                    "Qual é o seu principal objetivo?",
-                    style: theme.textTheme.headlineMedium,
-                    textAlign: TextAlign.center,
+                  GestureDetector(
+                    onTap: () => Navigator.of(context).pop(),
+                    child: Icon(Icons.arrow_back,
+                        color: theme.colorScheme.onSurface),
                   ),
-                  const SizedBox(height: 32),
-
-                  // ---
-                  // V3: Botões de Seleção (Refatorados)
-                  // A LÓGICA DE CHAMADA (onTap) É A MESMA.
-                  // ---
-                  _ObjectiveCard(
-                    text: 'Perder Gordura',
-                    icon: Icons.local_fire_department_rounded, // Ícone Premium
-                    isSelected: currentObjective == 'perder_gordura',
-                    onTap: () {
-                      context
-                          .read<OnboardingProvider>()
-                          .setObjective('perder_gordura');
-                      HapticFeedback.lightImpact();
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  _ObjectiveCard(
-                    text: 'Manter/Saúde',
-                    icon: Icons.health_and_safety_rounded, // Ícone Premium
-                    isSelected: currentObjective == 'manter_saude',
-                    onTap: () {
-                      context
-                          .read<OnboardingProvider>()
-                          .setObjective('manter_saude');
-                      HapticFeedback.lightImpact();
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  _ObjectiveCard(
-                    text: 'Ganhar Músculo',
-                    icon: Icons.fitness_center_rounded, // Ícone Premium
-                    isSelected: currentObjective == 'ganhar_musculo',
-                    onTap: () {
-                      context
-                          .read<OnboardingProvider>()
-                          .setObjective('ganhar_musculo');
-                      HapticFeedback.lightImpact();
-                    },
+                  const SizedBox(width: 16),
+                  const Expanded(
+                    // Usa a nova barra de progresso
+                    child: PremiumProgressBar(progress: 2 / 17),
                   ),
                 ],
               ),
             ),
-          ),
 
-          // ---
-          // V3: Botão de Navegação (INTOCADO)
-          // ---
-          Padding(
-            padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
-            child: ElevatedButton(
-              onPressed: currentObjective == null
-                  ? null // Botão desabilitado
-                  : () => _onNext(context, currentObjective),
-              child: const Text('Continuar'),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
+            // 2. CONTEÚDO ROLÁVEL
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // ---
+                    // V3: Título (Tematizado)
+                    // ---
+                    Text(
+                      "Qual é o seu principal objetivo?",
+                      style: theme.textTheme.headlineMedium,
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 32),
 
-// ---
-// V3: O NOVO WIDGET DE CARD PREMIUM (REFATORADO)
-// ---
-class _ObjectiveCard extends StatelessWidget {
-  final String text;
-  final IconData icon; // Novo: Ícone para dar polimento
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  const _ObjectiveCard({
-    required this.text,
-    required this.icon,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
-    return GestureDetector(
-      onTap: onTap,
-      // 1. Substituímos o Card por um AnimatedContainer para suavizar
-      //    a mudança de cor, borda e sombra.
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-        decoration: BoxDecoration(
-          // 2. A cor de fundo é mais sutil quando selecionada
-          color: isSelected
-              ? colorScheme.primary.withOpacity(0.1)
-              : theme.cardTheme.color, // Cor base do tema
-          borderRadius: BorderRadius.circular(16),
-          // 3. A borda muda de cor e espessura
-          border: Border.all(
-            color: isSelected
-                ? colorScheme.primary
-                : colorScheme.surfaceContainer, // Cor 'inativa' do tema
-            width: isSelected ? 2.0 : 1.0,
-          ),
-          // 4. (O TOQUE PREMIUM) Adicionamos um brilho (glow) quando selecionado
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: colorScheme.primary.withOpacity(0.15),
-                    blurRadius: 12.0,
-                    offset: const Offset(0, 2),
-                  ),
-                ]
-              : [], // Sem sombra quando não selecionado
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // 5. Adicionamos o Ícone para polimento visual
-            Icon(
-              icon,
-              color: isSelected ? colorScheme.primary : colorScheme.onSurface,
-              size: 20,
-            ),
-            const SizedBox(width: 16),
-            Text(
-              text,
-              style: theme.textTheme.bodyLarge?.copyWith(
-                fontWeight: FontWeight.w600,
-                // 6. O texto também muda de cor para dar ênfase
-                color: isSelected ? colorScheme.primary : colorScheme.onSurface,
+                    // ---
+                    // V3: Botões de Seleção (Substituído por PremiumSelectionCard)
+                    // (Removemos os ícones laterais e alinhamos à esquerda)
+                    // ---
+                    PremiumSelectionCard(
+                      text: 'Perder Gordura',
+                      isSelected: currentObjective == 'perder_gordura',
+                      onTap: () {
+                        context
+                            .read<OnboardingProvider>()
+                            .setObjective('perder_gordura');
+                        HapticService.lightImpact();
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    PremiumSelectionCard(
+                      text: 'Manter/Saúde',
+                      isSelected: currentObjective == 'manter_saude',
+                      onTap: () {
+                        context
+                            .read<OnboardingProvider>()
+                            .setObjective('manter_saude');
+                        HapticService.lightImpact();
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    PremiumSelectionCard(
+                      text: 'Ganhar Músculo',
+                      isSelected: currentObjective == 'ganhar_musculo',
+                      onTap: () {
+                        context
+                            .read<OnboardingProvider>()
+                            .setObjective('ganhar_musculo');
+                        HapticService.lightImpact();
+                      },
+                    ),
+                  ],
+                ),
               ),
-              textAlign: TextAlign.center,
+            ),
+
+            // ---
+            // V3: Botão de Navegação (FIXO NO RODAPÉ)
+            // ---
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
+              child: ElevatedButton(
+                onPressed: currentObjective == null
+                    ? null // Botão desabilitado
+                    : () => _onNext(context, currentObjective),
+                child: const Text('Continuar'),
+              ),
             ),
           ],
         ),
@@ -216,36 +158,6 @@ class _ObjectiveCard extends StatelessWidget {
 }
 
 // ---
-// V3: Widget de AppBar Consistente (INTOCADO)
+// V3: REMOVIDOS OS WIDGETS ANTIGOS (_ObjectiveCard e _OnboardingAppBar)
+// Eles foram substituídos pelos widgets centrais e reutilizáveis (PremiumProgressBar, PremiumSelectionCard).
 // ---
-class _OnboardingAppBar extends StatelessWidget implements PreferredSizeWidget {
-  final double progress; // Ex: 1 / 13
-
-  const _OnboardingAppBar({required this.progress});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return AppBar(
-      // V3: Estilo (cor, elevação) vem do AppTheme
-      leading: const BackButton(), // V3: Cor vem do AppTheme
-      title: Text(
-        "Etapa ${(progress * 13).toInt()} de 13",
-        style: theme.appBarTheme.titleTextStyle ?? theme.textTheme.titleMedium,
-      ),
-      bottom: PreferredSize(
-        preferredSize: const Size.fromHeight(4.0),
-        child: LinearProgressIndicator(
-          value: progress,
-          // V3: Cores vêm do AppTheme
-          backgroundColor: theme.colorScheme.surfaceContainer,
-          valueColor: AlwaysStoppedAnimation<Color>(theme.colorScheme.primary),
-        ),
-      ),
-    );
-  }
-
-  @override
-  Size get preferredSize => const Size.fromHeight(kToolbarHeight + 4.0);
-}

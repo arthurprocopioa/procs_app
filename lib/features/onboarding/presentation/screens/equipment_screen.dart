@@ -4,6 +4,9 @@ import 'focus_area_screen.dart'; // Próxima tela (1.10)
 import '../../../../core/services/analytics_service.dart';
 import '../../../../core/services/haptic_service.dart';
 import '../../application/onboarding_provider.dart';
+// V3 (NOVOS IMPORTS): Widgets reutilizáveis
+import '../widgets/premium_progress_bar.dart';
+import '../widgets/premium_selection_card.dart'; // Para a seleção principal
 
 /// Tela 1.9: Onde o usuário informa onde treina (Lógica V1, UI V3).
 /// Refatorada para usar a Fundação V3 (Tema, Haptics, Provider).
@@ -17,6 +20,7 @@ class EquipmentScreen extends StatefulWidget {
 class _EquipmentScreenState extends State<EquipmentScreen> {
   // V3: O Controller ainda é local (Estado V1)
   late final TextEditingController _otherEquipmentController;
+  final FocusNode _otherFocusNode = FocusNode(); // Para controle do teclado
 
   // V3: Mapa de Lógica de Opções Primárias
   final Map<String, String> _locationOptions = {
@@ -25,7 +29,7 @@ class _EquipmentScreenState extends State<EquipmentScreen> {
     'casa_com': 'Em casa com poucos equipamentos',
   };
 
-  // V3: Mapa de Lógica de Sub-Opções (Checkboxes)
+  // V3: Mapa de Lógica de Sub-Opções (Equipamentos)
   final Map<String, String> _homeEquipmentOptions = {
     'halteres': 'Halteres',
     'elasticos': 'Elásticos',
@@ -50,6 +54,7 @@ class _EquipmentScreenState extends State<EquipmentScreen> {
   @override
   void dispose() {
     _otherEquipmentController.dispose();
+    _otherFocusNode.dispose();
     super.dispose();
   }
 
@@ -59,6 +64,11 @@ class _EquipmentScreenState extends State<EquipmentScreen> {
 
     // V3: Haptics
     HapticService.mediumImpact();
+
+    // CORREÇÃO DO BUG: Usa FocusScope.of(context).unfocus() para remover o foco
+    // de qualquer campo de forma segura, em vez de depender de _otherFocusNode.unfocus()
+    // que falha se o widget não estiver na árvore.
+    FocusScope.of(context).unfocus();
 
     // V3: Salva o 'Outros' (o resto já está no provider)
     provider.setOtherEquipment(_otherEquipmentController.text.trim());
@@ -84,188 +94,207 @@ class _EquipmentScreenState extends State<EquipmentScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final textTheme = theme.textTheme;
-    final colorScheme = theme.colorScheme;
+    // Ouve as mudanças do provider para reconstruir o botão "Continuar"
     final provider = context.watch<OnboardingProvider>();
 
     // V3: Lógica V1 mantida
     final String? selectedLocation = provider.data.equipmentLocation;
+    // canContinue é true se o local de treino foi selecionado
     final bool canContinue = selectedLocation != null;
     final bool showSubSelection = selectedLocation == 'casa_com';
 
     return Scaffold(
-      appBar: AppBar(
-        // V3: Título do AppBar (Usa o Tema V3)
-        title: Text(
-          "Etapa 6 de 13",
-          style: theme.appBarTheme.titleTextStyle,
-        ),
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(4.0),
-          child: LinearProgressIndicator(
-            value: 6 / 13,
-            backgroundColor: theme.colorScheme.surfaceContainer,
-            valueColor: AlwaysStoppedAnimation<Color>(colorScheme.primary),
-          ),
-        ),
-      ),
-      body: Column(
-        children: [
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const SizedBox(height: 16),
-                  // 4. Título (V3)
-                  Text(
-                    "Onde você prefere treinar?",
-                    style: textTheme.headlineMedium,
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 32),
+      // 1. AppBar removido
+      appBar: null,
 
-                  // 5. Parte 1: Seleção Primária (V3 UI)
-                  ..._locationOptions.entries.map((entry) {
-                    return _buildLocationCard(
-                      key: entry.key,
-                      text: entry.value,
-                      isSelected: selectedLocation == entry.key,
-                      onTap: () {
-                        HapticService.lightImpact();
-                        provider.setEquipmentLocation(entry.key);
-                      },
-                    );
-                  }),
-
-                  // 6. Parte 2: Sub-Seleção (Lógica V1, UI V3)
-                  AnimatedOpacity(
-                    opacity: showSubSelection ? 1.0 : 0.0,
-                    duration: const Duration(milliseconds: 300),
-                    child: Visibility(
-                      visible: showSubSelection,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const SizedBox(height: 40),
-                          Text(
-                            "Quais equipamentos você tem?",
-                            style: textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-
-                          // Checkboxes (V3 UI)
-                          ..._homeEquipmentOptions.entries.map((entry) {
-                            return _buildCheckbox(
-                              key: entry.key,
-                              title: entry.value,
-                              provider: provider,
-                            );
-                          }),
-
-                          const SizedBox(height: 16),
-
-                          // TextField "Outros" (V3 UI)
-                          TextField(
-                            controller: _otherEquipmentController,
-                            decoration: const InputDecoration(
-                              labelText: 'Outros (opcional)',
-                            ),
-                            style: textTheme.bodyLarge,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 96), // Espaço para o botão
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-      // 7. Botão de Ação (Inferior Fixo - V3 UI)
+      // 2. Botão de Ação (Inferior Fixo - V3 UI)
       bottomNavigationBar: Padding(
         padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
         child: ElevatedButton(
-          // V3: Estilo V3 (Branco Padrão)
+          // canContinue é avaliado pelo watch acima
           onPressed: canContinue ? _onNext : null,
           child: const Text('Continuar'),
         ),
       ),
-    );
-  }
 
-  /// Helper V3: Constrói os cards de seleção de local
-  Widget _buildLocationCard({
-    required String key,
-    required String text,
-    required bool isSelected,
-    required VoidCallback onTap,
-  }) {
-    final theme = Theme.of(context);
+      // 3. Body para a barra de navegação customizada e conteúdo
+      body: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // BARRA DE PROGRESSO E BOTÃO DE VOLTAR (Passo 6/13)
+            Padding(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+              child: Row(
+                children: [
+                  GestureDetector(
+                    onTap: () => Navigator.of(context).pop(),
+                    child: Icon(Icons.arrow_back,
+                        color: theme.colorScheme.onSurface),
+                  ),
+                  const SizedBox(width: 16),
+                  const Expanded(
+                    // Progress bar real (6/13)
+                    child: PremiumProgressBar(progress: 6 / 17),
+                  ),
+                ],
+              ),
+            ),
 
-    // V3: Estilo V3 (Baseado no `schedule_screen`)
-    final Color bgColor =
-        isSelected ? const Color(0xFF303030) : theme.cardTheme.color!;
+            // CONTEÚDO ROLÁVEL
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const SizedBox(height: 16),
+                    // 4. Título (V3)
+                    Text(
+                      "Onde você prefere treinar?",
+                      style: theme.textTheme.headlineMedium,
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 32),
 
-    final Color fgColor =
-        isSelected ? Colors.white : theme.colorScheme.onSurface;
+                    // 5. Parte 1: Seleção Primária (V3 UI - Usando PremiumSelectionCard)
+                    ..._locationOptions.entries.map((entry) {
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 6.0),
+                        child: PremiumSelectionCard(
+                          text: entry.value,
+                          isSelected: selectedLocation == entry.key,
+                          onTap: () {
+                            HapticService.lightImpact();
+                            provider.setEquipmentLocation(entry.key);
+                            // Limpa o foco com a mudança de modo
+                            FocusScope.of(context).unfocus();
+                          },
+                        ),
+                      );
+                    }),
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6.0),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-          decoration: BoxDecoration(
-            color: bgColor,
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                text,
-                style: theme.textTheme.bodyLarge?.copyWith(
-                  color: fgColor,
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                    // 6. Parte 2: Sub-Seleção (Lógica V1, UI V3 - Cards Dourados)
+                    AnimatedOpacity(
+                      opacity: showSubSelection ? 1.0 : 0.0,
+                      duration: const Duration(milliseconds: 300),
+                      child: Visibility(
+                        visible: showSubSelection,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const SizedBox(height: 40),
+                            Text(
+                              "Quais equipamentos você tem?",
+                              style: textTheme.titleLarge?.copyWith(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+
+                            // Cards de Seleção Múltipla para Equipamentos
+                            ..._homeEquipmentOptions.entries.map((entry) {
+                              return _buildEquipmentCard(
+                                key: entry.key,
+                                text: entry.value,
+                                provider: provider,
+                              );
+                            }),
+
+                            const SizedBox(height: 24),
+
+                            // TextField "Outros" (V3 UI)
+                            TextField(
+                              controller: _otherEquipmentController,
+                              focusNode: _otherFocusNode, // Usando o FocusNode
+                              decoration: const InputDecoration(
+                                labelText: 'Outros (opcional)',
+                              ),
+                              style: textTheme.bodyLarge,
+                              // CORREÇÃO DO BUG: Muda a ação do teclado para DONE (OK/Concluir)
+                              textInputAction: TextInputAction.done,
+                              // Ação para fechar o teclado ao pressionar DONE
+                              onSubmitted: (_) {
+                                // Não precisamos mais chamar _otherFocusNode.unfocus() aqui,
+                                // pois o TextInputAction.done já faz isso, e o FocusScope.of(context).unfocus()
+                                // também é chamado no _onNext.
+                              },
+                              onChanged: (_) {
+                                // Manter apenas para salvar o valor no controller
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 40), // Espaço para o botão fixo
+                  ],
                 ),
               ),
-              if (isSelected)
-                const Icon(Icons.check_circle, color: Colors.white, size: 20),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  /// Helper V3: Constrói os checkboxes da sub-seleção
-  Widget _buildCheckbox({
+  /// NOVO WIDGET: Card de Seleção Múltipla para Equipamentos (Sem Checkbox aparente)
+  Widget _buildEquipmentCard({
     required String key,
-    required String title,
+    required String text,
     required OnboardingProvider provider,
   }) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final bool isSelected = provider.data.homeEquipment.contains(key);
 
-    return CheckboxListTile(
-      title: Text(title, style: theme.textTheme.bodyLarge),
-      value: isSelected,
-      onChanged: (bool? value) {
-        HapticService.lightImpact();
-        provider.toggleHomeEquipment(key);
-      },
-      // V3: Tema
-      activeColor: theme.colorScheme.primary,
-      checkColor: theme.colorScheme.onPrimary,
-      controlAffinity: ListTileControlAffinity.leading,
-      contentPadding: EdgeInsets.zero,
-      tileColor: Colors.transparent,
+    // Design idêntico ao _DaySelectionCard da ScheduleScreen
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6.0),
+      child: GestureDetector(
+        onTap: () {
+          HapticService.lightImpact();
+          provider.toggleHomeEquipment(key);
+        },
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+          decoration: BoxDecoration(
+            // Fundo Dourado sutil ou Fundo do Card
+            color: isSelected
+                ? colorScheme.primary.withOpacity(0.1)
+                : theme.cardTheme.color,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              // Borda Dourada ou Borda Inativa
+              color: isSelected
+                  ? colorScheme.primary
+                  : theme.colorScheme.surfaceContainer,
+              width: isSelected ? 2.0 : 1.0,
+            ),
+            // Sombra Premium
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: colorScheme.primary.withOpacity(0.15),
+                      blurRadius: 12.0,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                : [],
+          ),
+          child: Text(
+            text,
+            textAlign: TextAlign.left,
+            style: theme.textTheme.bodyLarge?.copyWith(
+              fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+              // Texto Dourado ou Texto Padrão
+              color: isSelected ? colorScheme.primary : colorScheme.onSurface,
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

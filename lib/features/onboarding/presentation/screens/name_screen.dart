@@ -95,11 +95,18 @@ class _NameScreenState extends State<NameScreen> {
               // V3 (REFATORADO): Botão movido para cá
               const SizedBox(height: 32),
               ElevatedButton(
-                // V3: Estilo preservado (Botão Preto)
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: theme.colorScheme.surfaceContainerHighest,
-                  foregroundColor: theme.colorScheme.onSurface,
-                ),
+                // --- MUDANÇA CRÍTICA AQUI ---
+                // Se o botão estiver ativo, ele usa o estilo padrão (branco/CTA).
+                // Se estiver inativo, ele usa o estilo secundário (#1E1E1E).
+                style: _canContinue
+                    ? null // Usa o estilo primário (branco) do tema
+                    : ElevatedButton.styleFrom(
+                        // Usa o estilo secundário (fundo #1E1E1E)
+                        backgroundColor:
+                            theme.colorScheme.surfaceContainerHighest,
+                        foregroundColor: theme.colorScheme.onSurface,
+                      ),
+                // -----------------------------
                 onPressed: _canContinue ? _onNext : null,
                 child: const Text("Continuar"),
               ),

@@ -1,14 +1,12 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:lottie/lottie.dart'; // 1. IMPORT V3 (Lottie)
 import 'package:provider/provider.dart';
 
-// 2. IMPORTS V3 (Fundação)
 import '../../../../core/services/analytics_service.dart';
 import '../../../../core/services/haptic_service.dart';
-import 'summary_screen.dart'; // Próxima tela (1.19)
+import 'summary_screen.dart'; // Próxima fase final
 
-/// Tela 1.18: Pausa (Loading) V3.1
-/// (V3.1: Refatorada para Lottie.network() para corrigir o crash V3)
+/// NOVA TELA: Loading para a Dieta (NÃO CONTA COMO ETAPA DO ONBOARDING).
 class LoadingDietPlanScreen extends StatefulWidget {
   const LoadingDietPlanScreen({super.key});
 
@@ -17,13 +15,20 @@ class LoadingDietPlanScreen extends StatefulWidget {
 }
 
 class _LoadingDietPlanScreenState extends State<LoadingDietPlanScreen> {
-  bool _isLoading = true;
+  // --- CONSTANTES DE TEMPO E MENSAGENS ---
+  static const int _loadingDurationSeconds = 6;
+  final List<String> _loadingMessages = [
+    "Analisando suas restrições e preferências",
+    "Calculando o balanço calórico ideal para sua meta",
+    "Gerando seu plano alimentar premium",
+  ];
+  // ----------------------------------------
 
-  // V3.1: URLs V3 (Substituem os assets V3.0)
-  final String _lottieLoadingUrl =
-      "https://lottie.host/1b98b961-d07c-440f-8336-05681e8c00ad/aWJm8tDOaO.json";
-  final String _lottieSuccessUrl =
-      "https://lottie.host/b0c3d23a-c816-419b-a16f-16c80c2f8a4f/N8NQnwnsN6.json";
+  bool _isLoading = true;
+  String _currentMessage = "Analisando suas restrições e preferências";
+  int _messageIndex = 0;
+  Timer? _messageTimer;
+  Timer? _navigationTimer;
 
   @override
   void initState() {
@@ -32,28 +37,55 @@ class _LoadingDietPlanScreenState extends State<LoadingDietPlanScreen> {
       Provider.of<AnalyticsService>(context, listen: false)
           .trackScreenView('loading_diet_plan');
     });
-    _startFakeLoading();
+    _startLoadingSequence();
   }
 
-  Future<void> _startFakeLoading() async {
-    await Future.delayed(const Duration(seconds: 3));
-    if (mounted) {
+  @override
+  void dispose() {
+    _messageTimer?.cancel();
+    _navigationTimer?.cancel();
+    super.dispose();
+  }
+
+  /// Inicia a sequência de carregamento (mensagens + tempo total)
+  void _startLoadingSequence() {
+    // 1. Configura o Timer para alternar as mensagens a cada 2 segundos
+    _messageTimer = Timer.periodic(const Duration(seconds: 2), (timer) {
+      if (!mounted) return;
+
+      setState(() {
+        _messageIndex = (_messageIndex + 1) % _loadingMessages.length;
+        _currentMessage = _loadingMessages[_messageIndex];
+      });
+    });
+
+    // 2. Configura o Timer para a navegação após 6 segundos
+    _navigationTimer =
+        Timer(const Duration(seconds: _loadingDurationSeconds), () {
+      if (!mounted) return;
+
+      _messageTimer?.cancel();
+
       setState(() {
         _isLoading = false;
       });
       HapticService.heavyImpact();
-    }
+    });
   }
 
+  /// Navega para o Resumo
   void _onNext() {
     HapticService.lightImpact();
+
     context.read<AnalyticsService>().trackEvent(
-      'loading_diet_plan_continue',
+      'loading_diet_plan_complete',
       parameters: {'phase_start': 'summary'},
     );
+
+    // Navega para a tela final de Resumo/Checkout
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
-        builder: (context) => const SummaryScreen(), // 1.19
+        builder: (context) => const SummaryScreen(),
       ),
     );
   }
@@ -63,16 +95,30 @@ class _LoadingDietPlanScreenState extends State<LoadingDietPlanScreen> {
     final theme = Theme.of(context);
 
     return Scaffold(
+      // NÃO TEMOS BARRA DE PROGRESSO NESTA TELA
+      appBar: null,
+      backgroundColor: theme.scaffoldBackgroundColor,
+
+      // Botão Fixo no Rodapé (só aparece no sucesso)
+      bottomNavigationBar: _isLoading
+          ? null
+          : Padding(
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
+              child: ElevatedButton(
+                onPressed: _onNext,
+                child: const Text('Seguir para o resumo'), // Texto mais direto
+              ),
+            ),
+
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24.0),
           child: Center(
             child: AnimatedSwitcher(
               duration: const Duration(milliseconds: 300),
-              // V3.1: CORREÇÃO (Lottie.network)
               child: _isLoading
-                  ? _buildLoadingState(theme, _lottieLoadingUrl)
-                  : _buildSuccessState(theme, _lottieSuccessUrl),
+                  ? _buildLoadingState(theme)
+                  : _buildSuccessState(theme),
             ),
           ),
         ),
@@ -80,27 +126,38 @@ class _LoadingDietPlanScreenState extends State<LoadingDietPlanScreen> {
     );
   }
 
-  /// Estado 1: Loading (V3.1 com Lottie.network)
-  Widget _buildLoadingState(ThemeData theme, String url) {
+  /// Estado 1: Loading
+  Widget _buildLoadingState(ThemeData theme) {
     return Column(
       key: const ValueKey('loading'),
       mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // V3.1: LOTTIE.NETWORK (Substitui Lottie.asset V3.0)
-        Lottie.network(
-          url,
-          height: 150,
+        Center(
+          child: SizedBox(
+            width: 50,
+            height: 50,
+            child: CircularProgressIndicator(
+              strokeWidth: 4,
+              valueColor:
+                  AlwaysStoppedAnimation<Color>(theme.colorScheme.primary),
+              backgroundColor: theme.colorScheme.surfaceContainer,
+            ),
+          ),
         ),
-        const SizedBox(height: 24),
-        Text(
-          "Calculando suas metas de nutrição...",
-          style: theme.textTheme.headlineSmall,
-          textAlign: TextAlign.center,
+        const SizedBox(height: 32),
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 300),
+          child: Text(
+            _currentMessage,
+            key: ValueKey<String>(_currentMessage),
+            style: theme.textTheme.headlineSmall,
+            textAlign: TextAlign.center,
+          ),
         ),
         const SizedBox(height: 12),
         Text(
-          "Analisando suas preferências e restrições para criar suas variações...",
+          "Não feche o aplicativo...",
           style: theme.textTheme.bodyMedium,
           textAlign: TextAlign.center,
         ),
@@ -108,31 +165,75 @@ class _LoadingDietPlanScreenState extends State<LoadingDietPlanScreen> {
     );
   }
 
-  /// Estado 2: Sucesso (V3.1 com Lottie.network)
-  Widget _buildSuccessState(ThemeData theme, String url) {
+  /// Estado 2: Sucesso (Com Prova Social)
+  Widget _buildSuccessState(ThemeData theme) {
     return Column(
       key: const ValueKey('success'),
       mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // V3.1: LOTTIE.NETWORK (Substitui Lottie.asset V3.0)
-        Lottie.network(
-          url,
-          height: 120,
-          repeat: false, // Só toca uma vez
+        // ÍCONE DE SUCESSO (V3: Check Dourado)
+        Center(
+          child: Icon(
+            Icons.check_circle_rounded,
+            color: theme.colorScheme.primary,
+            size: 80,
+          ),
         ),
         const SizedBox(height: 16),
         Text(
-          "Seu plano de nutrição está pronto!",
+          "Seu plano de dieta está pronto!",
           style: theme.textTheme.headlineSmall,
           textAlign: TextAlign.center,
         ),
+        const SizedBox(height: 40),
+
+        // PROVA SOCIAL (Mantida)
+        _buildSocialProof(theme),
+
         const SizedBox(height: 48),
-        ElevatedButton(
-          onPressed: _onNext,
-          child: const Text('Ver Resumo do Plano'),
-        ),
       ],
+    );
+  }
+
+  /// Helper V3: Prova Social (Mantida)
+  Widget _buildSocialProof(ThemeData theme) {
+    return Container(
+      padding: const EdgeInsets.all(16.0),
+      decoration: BoxDecoration(
+        color: theme.cardTheme.color,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            Icons.verified_rounded,
+            color: theme.colorScheme.primary,
+            size: 20,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "\"O Procs AI me ajudou a comer de forma inteligente sem restrições loucas.\"",
+                  style: theme.textTheme.bodyMedium
+                      ?.copyWith(fontStyle: FontStyle.italic),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  "- Usuário Beta",
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.textTheme.bodyMedium?.color,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

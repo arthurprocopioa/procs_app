@@ -1,13 +1,13 @@
+import 'dart:async'; // Importado para usar o Timer
 import 'package:flutter/material.dart';
-import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
 
 import '../../../../core/services/analytics_service.dart';
 import '../../../../core/services/haptic_service.dart';
-import 'diet_restrictions_screen.dart';
+import 'diet_restrictions_screen.dart'; // Próxima fase (12/15)
 
-/// Tela 1.13: Pausa (Loading) V3.1
-/// (V3.1: Refatorada para Lottie.network() para corrigir o crash V3)
+/// Tela 1.13: Pausa (Loading) V3.1 - Agora é o Passo 11/15
+/// (Refatorada para animação de frases e tempo fixo de 6 segundos)
 class LoadingTrainPlanScreen extends StatefulWidget {
   const LoadingTrainPlanScreen({super.key});
 
@@ -16,13 +16,20 @@ class LoadingTrainPlanScreen extends StatefulWidget {
 }
 
 class _LoadingTrainPlanScreenState extends State<LoadingTrainPlanScreen> {
-  bool _isLoading = true;
+  // --- CONSTANTES DE TEMPO E MENSAGENS ---
+  static const int _loadingDurationSeconds = 6;
+  final List<String> _loadingMessages = [
+    "Processando seus dados",
+    "Avaliando possibilidades",
+    "Montando a melhor ficha de treino para você",
+  ];
+  // ----------------------------------------
 
-  // V3.1: URLs V3 (Substituem os assets V3.0)
-  final String _lottieLoadingUrl =
-      "https://lottie.host/1b98b961-d07c-440f-8336-05681e8c00ad/aWJm8tDOaO.json";
-  final String _lottieSuccessUrl =
-      "https://lottie.host/b0c3d23a-c816-419b-a16f-16c80c2f8a4f/N8NQnwnsN6.json";
+  bool _isLoading = true;
+  String _currentMessage = "Processando seus dados";
+  int _messageIndex = 0;
+  Timer? _messageTimer;
+  Timer? _navigationTimer;
 
   @override
   void initState() {
@@ -31,19 +38,41 @@ class _LoadingTrainPlanScreenState extends State<LoadingTrainPlanScreen> {
       Provider.of<AnalyticsService>(context, listen: false)
           .trackScreenView('loading_train_plan');
     });
-    _startFakeLoading();
+    _startLoadingSequence();
   }
 
-  /// Simula o processamento da IA
-  Future<void> _startFakeLoading() async {
-    await Future.delayed(const Duration(seconds: 4));
+  @override
+  void dispose() {
+    _messageTimer?.cancel();
+    _navigationTimer?.cancel();
+    super.dispose();
+  }
 
-    if (mounted) {
+  /// Inicia a sequência de carregamento (mensagens + tempo total)
+  void _startLoadingSequence() {
+    // 1. Configura o Timer para alternar as mensagens a cada 2 segundos
+    _messageTimer = Timer.periodic(const Duration(seconds: 2), (timer) {
+      if (!mounted) return;
+
+      setState(() {
+        _messageIndex = (_messageIndex + 1) % _loadingMessages.length;
+        _currentMessage = _loadingMessages[_messageIndex];
+      });
+    });
+
+    // 2. Configura o Timer para a navegação após 6 segundos
+    _navigationTimer =
+        Timer(const Duration(seconds: _loadingDurationSeconds), () {
+      if (!mounted) return;
+
+      // Para os timers
+      _messageTimer?.cancel();
+
       setState(() {
         _isLoading = false;
       });
       HapticService.heavyImpact();
-    }
+    });
   }
 
   /// Navega para a Fase 2 (Dieta)
@@ -55,10 +84,11 @@ class _LoadingTrainPlanScreenState extends State<LoadingTrainPlanScreen> {
       parameters: {'phase_start': 'diet'},
     );
 
+    // Navega para a Dieta, que agora é 12/15
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
         builder: (context) =>
-            const DietRestrictionsScreen(), // Navega para 1.14
+            const DietRestrictionsScreen(), // Navega para 12/15
       ),
     );
   }
@@ -67,17 +97,31 @@ class _LoadingTrainPlanScreenState extends State<LoadingTrainPlanScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
+    // 1. Esta tela não tem AppBar/Barra de Progresso (confirmado pelo Procópio)
     return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
+
+      // 2. Botão Fixo no Rodapé
+      bottomNavigationBar: _isLoading
+          ? null // Não mostra o botão durante o loading
+          : Padding(
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
+              child: ElevatedButton(
+                onPressed: _onNext,
+                child: const Text('Seguir para próxima fase'),
+              ),
+            ),
+
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24.0),
           child: Center(
+            // Usa AnimatedSwitcher para transicionar entre Loading e Sucesso
             child: AnimatedSwitcher(
               duration: const Duration(milliseconds: 300),
-              // V3.1: CORREÇÃO (Lottie.network)
               child: _isLoading
-                  ? _buildLoadingState(theme, _lottieLoadingUrl)
-                  : _buildSuccessState(theme, _lottieSuccessUrl),
+                  ? _buildLoadingState(theme)
+                  : _buildSuccessState(theme),
             ),
           ),
         ),
@@ -85,28 +129,42 @@ class _LoadingTrainPlanScreenState extends State<LoadingTrainPlanScreen> {
     );
   }
 
-  /// Estado 1: Loading (V3.1 com Lottie.network)
-  Widget _buildLoadingState(ThemeData theme, String url) {
+  /// Estado 1: Loading (Com indicador e frases alternantes)
+  Widget _buildLoadingState(ThemeData theme) {
     return Column(
       key: const ValueKey('loading'),
       mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // V3.1: LOTTIE.NETWORK (Substitui Lottie.asset V3.0)
-        Lottie.network(
-          url,
-          height: 150,
+        // ÍCONE DE CARREGAMENTO (Nossas cores, dourado)
+        Center(
+          child: SizedBox(
+            width: 50,
+            height: 50,
+            child: CircularProgressIndicator(
+              strokeWidth: 4,
+              valueColor:
+                  AlwaysStoppedAnimation<Color>(theme.colorScheme.primary),
+              backgroundColor: theme.colorScheme.surfaceContainer,
+            ),
+          ),
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 32),
 
-        Text(
-          "Gerando seu plano de treino...",
-          style: theme.textTheme.headlineSmall,
-          textAlign: TextAlign.center,
+        // MENSAGEM ALTERNANTE
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 300),
+          child: Text(
+            _currentMessage,
+            key: ValueKey<String>(
+                _currentMessage), // Chave para animar a transição
+            style: theme.textTheme.headlineSmall,
+            textAlign: TextAlign.center,
+          ),
         ),
         const SizedBox(height: 12),
         Text(
-          "Nossa IA está analisando suas respostas para criar o plano perfeito...",
+          "Não feche o aplicativo...",
           style: theme.textTheme.bodyMedium,
           textAlign: TextAlign.center,
         ),
@@ -114,18 +172,20 @@ class _LoadingTrainPlanScreenState extends State<LoadingTrainPlanScreen> {
     );
   }
 
-  /// Estado 2: Sucesso (V3.1 com Lottie.network)
-  Widget _buildSuccessState(ThemeData theme, String url) {
+  /// Estado 2: Sucesso (Com Prova Social)
+  Widget _buildSuccessState(ThemeData theme) {
     return Column(
       key: const ValueKey('success'),
       mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // V3.1: LOTTIE.NETWORK (Substitui Lottie.asset V3.0)
-        Lottie.network(
-          url,
-          height: 120,
-          repeat: false, // Só toca uma vez
+        // ÍCONE DE SUCESSO (V3: Check Dourado)
+        Center(
+          child: Icon(
+            Icons.check_circle_rounded,
+            color: theme.colorScheme.primary,
+            size: 80,
+          ),
         ),
         const SizedBox(height: 16),
 
@@ -136,19 +196,17 @@ class _LoadingTrainPlanScreenState extends State<LoadingTrainPlanScreen> {
         ),
         const SizedBox(height: 40),
 
+        // PROVA SOCIAL (Mantida)
         _buildSocialProof(theme),
 
         const SizedBox(height: 48),
 
-        ElevatedButton(
-          onPressed: _onNext,
-          child: const Text('Ver Fase 2: Dieta'),
-        ),
+        // O botão 'Continuar' está agora no bottomNavigationBar
       ],
     );
   }
 
-  /// Helper V3: Prova Social (Tematizada)
+  /// Helper V3: Prova Social (Mantida)
   Widget _buildSocialProof(ThemeData theme) {
     return Container(
       padding: const EdgeInsets.all(16.0),

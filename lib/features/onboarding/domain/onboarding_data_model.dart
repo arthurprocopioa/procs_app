@@ -22,7 +22,7 @@ class OnboardingDataModel {
   final double? targetWeight;
   final String? experienceLevel;
 
-  // V3 (Ref. Ponto 6 - Agenda): Lógica de Agenda Refatorada
+  // V3 (Ref. Ponto 6 - Agenda)
   final String? scheduleMode; // 'days_of_week' ou 'times_per_week'
   final Set<String> scheduleDaysOfWeek;
   final int? scheduleTimesPerWeek;
@@ -34,7 +34,7 @@ class OnboardingDataModel {
   final bool hasInjury;
   final String? injuryDetails;
 
-  // V3 (Ref. Ponto 9 - Cardio): Lógica de Cardio Refatorada
+  // V3 (Ref. Ponto 9 - Cardio)
   final String? cardioPreference; // 'sim', 'nao', 'ia_decide'
   final String? cardioType; // 'corrida', 'natacao', 'ciclismo', 'outros'
   final String? cardioOtherDetail; // "Dança"
@@ -42,6 +42,9 @@ class OnboardingDataModel {
       cardioScheduleMode; // 'on_days', 'days_of_week', 'times_per_week'
   final Set<String> cardioDaysOfWeek;
   final int? cardioTimesPerWeek;
+
+  // NOVO: Tempo de treino diário (Passo 10/15)
+  final String? trainingTime; // Ex: '30min', '60min'
 
   // Módulo 2.3: Dieta (Telas 1.14 - 1.17)
   // V3 (Ref. Ponto 11 - Dieta): Adicionados
@@ -52,6 +55,9 @@ class OnboardingDataModel {
   final int? mealCount;
   final Set<String> foodDislikes;
   final bool? interestInSupplements;
+
+  // NOVO: Localização do Usuário (Passo 15/15)
+  final String? userRegion; // Ex: 'sudeste', 'sul', 'nordeste'
 
   // Módulo 2.4: Fechamento (Telas 1.20 - 1.24)
   final String? phoneNumber;
@@ -90,14 +96,19 @@ class OnboardingDataModel {
     this.cardioScheduleMode,
     this.cardioDaysOfWeek = const <String>{},
     this.cardioTimesPerWeek,
+    // NOVO (Tempo de Treino)
+    this.trainingTime,
     // M2.3
     // V3 (Ponto 11 - Dieta)
     this.dietHasNoRestrictions = false,
     this.dietOtherRestriction,
     this.dietRestrictions = const <String>{},
+    //
     this.mealCount = 4,
     this.foodDislikes = const <String>{},
     this.interestInSupplements,
+    // NOVO (Localização)
+    this.userRegion,
     // M2.4
     this.phoneNumber,
     this.selectedPlan,
@@ -133,6 +144,8 @@ class OnboardingDataModel {
     String? cardioScheduleMode,
     Set<String>? cardioDaysOfWeek,
     int? cardioTimesPerWeek,
+    // NOVO (Tempo de Treino)
+    String? trainingTime,
     // V3 (Ponto 11 - Dieta)
     bool? dietHasNoRestrictions,
     String? dietOtherRestriction,
@@ -141,6 +154,8 @@ class OnboardingDataModel {
     int? mealCount,
     Set<String>? foodDislikes,
     bool? interestInSupplements,
+    // NOVO (Localização)
+    String? userRegion,
     String? phoneNumber,
     String? selectedPlan,
   }) {
@@ -173,6 +188,8 @@ class OnboardingDataModel {
       cardioScheduleMode: cardioScheduleMode ?? this.cardioScheduleMode,
       cardioDaysOfWeek: cardioDaysOfWeek ?? this.cardioDaysOfWeek,
       cardioTimesPerWeek: cardioTimesPerWeek ?? this.cardioTimesPerWeek,
+      // NOVO (Tempo de Treino)
+      trainingTime: trainingTime ?? this.trainingTime,
       // V3 (Ponto 11 - Dieta)
       dietHasNoRestrictions:
           dietHasNoRestrictions ?? this.dietHasNoRestrictions,
@@ -183,6 +200,9 @@ class OnboardingDataModel {
       foodDislikes: foodDislikes ?? this.foodDislikes,
       interestInSupplements:
           interestInSupplements ?? this.interestInSupplements,
+      // NOVO (Localização)
+      userRegion: userRegion ?? this.userRegion,
+      // M2.4
       phoneNumber: phoneNumber ?? this.phoneNumber,
       selectedPlan: selectedPlan ?? this.selectedPlan,
     );

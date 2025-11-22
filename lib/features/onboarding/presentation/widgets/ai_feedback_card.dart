@@ -27,9 +27,23 @@ class AiFeedbackCard extends StatelessWidget {
       case FeedbackState.warning:
         return Colors.orange.shade700;
       case FeedbackState.success:
+      case FeedbackState
+            .neutral: // CORREÇÃO: Usa a cor primária mesmo em Neutral
         return theme.colorScheme.primary; // Dourado
-      case FeedbackState.neutral:
-        return theme.cardTheme.color ?? theme.colorScheme.surfaceContainer;
+    }
+  }
+
+  // V3 (NOVO): Lógica para cor do Título (para o brilho)
+  Color _getTitleColor(ThemeData theme) {
+    switch (state) {
+      case FeedbackState.error:
+        return Colors.red.shade400; // Um vermelho mais claro para o texto
+      case FeedbackState.warning:
+        return Colors.orange.shade400; // Um laranja mais claro para o texto
+      case FeedbackState.success:
+      case FeedbackState
+            .neutral: // CORREÇÃO: Usa a cor primária mesmo em Neutral
+        return theme.colorScheme.primary;
     }
   }
 
@@ -37,6 +51,7 @@ class AiFeedbackCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final Color borderColor = _getBorderColor(theme);
+    final Color titleColor = _getTitleColor(theme);
 
     // V3: Anima a mudança da borda
     return AnimatedContainer(
@@ -54,9 +69,10 @@ class AiFeedbackCard extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Ícone (CORRIGIDO: usa FontAwesomeIcons.brain ou Icon.bolt, dependendo da sua preferência)
           Icon(
-            FontAwesomeIcons.brain,
-            color: borderColor, // Ícone também muda de cor
+            FontAwesomeIcons.brain, // Mantendo o ícone que estava no seu código
+            color: titleColor, // Ícone usa a cor do título (dourado)
             size: 20,
           ),
           const SizedBox(width: 12),
@@ -68,7 +84,7 @@ class AiFeedbackCard extends StatelessWidget {
                   title,
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: borderColor, // Título também muda de cor
+                    color: titleColor, // Título agora é sempre dourado/colorido
                   ),
                 ),
                 const SizedBox(height: 4),
