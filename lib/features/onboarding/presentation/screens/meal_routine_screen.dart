@@ -9,6 +9,7 @@ import '../../../../core/services/haptic_service.dart';
 import '../../application/onboarding_provider.dart';
 // V3 (NOVOS IMPORTS): Widgets reutilizáveis
 import '../widgets/premium_progress_bar.dart';
+import '../widgets/procs_back_button.dart';
 
 /// Tela 1.15: O usuário informa o número de refeições diárias.
 /// Refatorada para Fundação V3 e UI V3 ("Ruler Picker").
@@ -116,15 +117,11 @@ class _MealRoutineScreenState extends State<MealRoutineScreen> {
                   const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
               child: Row(
                 children: [
-                  GestureDetector(
-                    onTap: () => Navigator.of(context).pop(),
-                    child: Icon(Icons.arrow_back,
-                        color: theme.colorScheme.onSurface),
-                  ),
+                  const ProcsBackButton(),
                   const SizedBox(width: 16),
                   const Expanded(
                     // Progress bar: 13/15
-                    child: PremiumProgressBar(progress: 13 / 17),
+                    child: PremiumProgressBar(progress: 13 / 16),
                   ),
                 ],
               ),

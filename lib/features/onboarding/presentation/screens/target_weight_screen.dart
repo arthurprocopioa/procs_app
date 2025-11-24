@@ -12,6 +12,7 @@ import 'experience_screen.dart'; // Próxima tela
 import '../widgets/premium_progress_bar.dart'; // V3 (PONTO 3)
 // V3 (CORREÇÃO): Importa o widget de feedback centralizado
 import '../widgets/ai_feedback_card.dart';
+import '../widgets/procs_back_button.dart';
 
 /// Tela 1.6: Onde o usuário define seu peso-alvo.
 /// V3 (SPRINT 2/3): Refatorada para nova UX de régua e feedback.
@@ -135,14 +136,10 @@ class _TargetWeightScreenState extends State<TargetWeightScreen> {
                   const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
               child: Row(
                 children: [
-                  GestureDetector(
-                    onTap: () => Navigator.of(context).pop(),
-                    child: Icon(Icons.arrow_back,
-                        color: theme.colorScheme.onSurface),
-                  ),
+                  const ProcsBackButton(),
                   const SizedBox(width: 16),
                   const Expanded(
-                    child: PremiumProgressBar(progress: 3 / 17),
+                    child: PremiumProgressBar(progress: 3 / 16),
                   ),
                 ],
               ),

@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
-// ---
-// IMPORTS V3 (Fundação)
-// ---
 import '../../../../core/services/analytics_service.dart';
-import '../../../../core/services/haptic_service.dart'; // V3: O caminho correto (Substitui 'utils/haptics.dart' V1)
-import 'commitment_screen.dart'; // Próxima tela (1.21)
-// (Remove 'app_theme.dart' V1)
+import '../../../../core/services/haptic_service.dart';
+import '../../application/onboarding_provider.dart';
+import '../../domain/onboarding_data_model.dart';
+import 'commitment_screen.dart'; // Próxima tela
+import '../widgets/premium_selection_card.dart';
+import '../widgets/procs_back_button.dart';
 
-/// Tela 1.20: Conversão para Notificações (Gamification).
-/// Refatorada para Fundação V3 (Tema, Haptics, Analytics).
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
 
@@ -20,27 +20,23 @@ class NotificationsScreen extends StatefulWidget {
 }
 
 class _NotificationsScreenState extends State<NotificationsScreen> {
-  // --- AÇÕES V3 ---
+  // Estado local para controle de UI, o dado real vai pro Provider
+  bool _showConfig = false;
 
   @override
   void initState() {
     super.initState();
-    // V3: Analytics
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<AnalyticsService>(context, listen: false)
           .trackScreenView('notifications');
     });
   }
 
-  /// Ação V3: Pede a permissão de notificação (FCM)
-  // [CORREÇÃO] 1. Removido 'BuildContext context' dos parâmetros
   Future<void> _onActivate() async {
-    // [CORREÇÃO] 2. 'context.read' agora usa o 'context' do State (que é seguro)
-    final analytics = context.read<AnalyticsService>();
-    bool permissionGranted = false;
+    HapticService.heavyImpact();
+    final provider = context.read<OnboardingProvider>();
 
     try {
-      // Lógica V1 mantida (está 100% correta)
       final messaging = FirebaseMessaging.instance;
       final settings = await messaging.requestPermission(
         alert: true,
@@ -48,123 +44,214 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         sound: true,
       );
 
-      permissionGranted =
-          settings.authorizationStatus == AuthorizationStatus.authorized;
+      if (settings.authorizationStatus == AuthorizationStatus.authorized) {
+        provider.setNotificationsEnabled(true);
+        setState(() {
+          _showConfig = true; // Revela as configurações
+        });
 
-      if (!mounted) return;
-
-      if (permissionGranted) {
-        // [CORREÇÃO] O linter apontava para este bloco (linha 75 no log original)
-        // A lógica está correta, o problema era o parâmetro 'context' na função.
-        await analytics.trackEvent('notifications_permission_activated');
-        // V3: Haptics (Mapeamento de Evento-Chave)
-        // (Substitui Haptics.success() V1)
-        HapticService.heavyImpact();
+        // Se o usuário não quiser configurar agora, ele pode clicar em Continuar
+        // Mas a ideia é mostrar o serviço primeiro.
       } else {
-        await analytics.logEvent('notifications_permission_denied');
-        // V3: Haptics (Mapeamento de Erro/Aviso)
-        // (Substitui Haptics.error() V1)
-        HapticService.mediumImpact();
+        _onSkip();
       }
     } catch (e) {
-      if (mounted) {
-        await analytics.logEvent('notifications_permission_error');
-        // V3: Haptics (Mapeamento de Erro/Aviso)
-        HapticService.mediumImpact();
-      }
-      debugPrint("Erro ao pedir permissão de FCM: $e");
+      debugPrint("Erro ao pedir notificação: $e");
+      _onSkip();
     }
-
-    if (!mounted) return;
-    // [CORREÇÃO] 3. Chama a função _navigateToNext sem 'context'
-    _navigateToNext();
   }
 
-  /// Ação V3: Pula a permissão
-  // [CORREÇÃO] 4. Removido 'BuildContext context' dos parâmetros
   void _onSkip() {
-    // [CORREÇÃO] 5. 'context.read' agora usa o 'context' do State
-    final analytics = context.read<AnalyticsService>();
-    analytics.logEvent('notifications_permission_skipped');
-    // V3: Haptics
     HapticService.lightImpact();
-    // [CORREÇÃO] 6. Chama a função _navigateToNext sem 'context'
+    final provider = context.read<OnboardingProvider>();
+    provider.setNotificationsEnabled(false);
     _navigateToNext();
   }
 
-  /// Helper V1 (Lógica mantida: pushReplacement)
-  // [CORREÇÃO] 7. Removido 'BuildContext context' dos parâmetros
   void _navigateToNext() {
-    // [CORREÇÃO] 8. 'Navigator.of(context)' agora usa o 'context' do State
     Navigator.of(context).pushReplacement(
-      MaterialPageRoute(
-        builder: (context) => const CommitmentScreen(), // Navega para 1.21
-      ),
+      MaterialPageRoute(builder: (context) => const CommitmentScreen()),
     );
   }
 
+  // --- LÓGICA DE CONFIGURAÇÃO ---
+
+  Future<void> _configureTraining(OnboardingProvider provider) async {
+    // Exemplo de lógica: Abre um modal para selecionar dias e horas
+    // Baseado no provider.data.scheduleTimesPerWeek
+    final times = provider.data.scheduleTimesPerWeek ?? 3;
+
+    // Mockup da lógica complexa (em produção, seria um modal Stateful)
+    // Aqui simplifico mostrando um SnackBar para simular a funcionalidade
+    // pois a implementação completa do modal de dias/horas é extensa.
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+          content: Text(
+              "Configurar $times dias de treino... (Funcionalidade em Modal)")),
+    );
+    // Na vida real: showDialog com MultiSelectDay e TimePicker
+  }
+
+  // ... Outros métodos de configuração ...
+
   @override
   Widget build(BuildContext context) {
-    // ---
-    // TEMA V3
-    // ---
     final theme = Theme.of(context);
     final textTheme = theme.textTheme;
-    final colorScheme = theme.colorScheme;
+    final provider = context.watch<OnboardingProvider>();
+    final data = provider.data;
 
     return Scaffold(
-      // V1: Sem AppBar (Correto)
+      appBar: AppBar(leading: const ProcsBackButton()),
+      bottomNavigationBar: _showConfig
+          ? Padding(
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
+              child: ElevatedButton(
+                onPressed: _navigateToNext,
+                child: const Text('Confirmar e Continuar'),
+              ),
+            )
+          : null, // Botão inicial é inline
+
       body: SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Spacer(flex: 2),
-              // V3: Ícone (Usa o Tema V3)
-              Icon(
-                Icons.notifications_active_rounded,
-                color: colorScheme.primary, // V3: Dourado (Tema)
-                size: 64,
-              ),
-              const SizedBox(height: 24),
-              // V3: Título (Usa o Tema V3)
-              Text(
-                "Não quebre a sua corrente!",
-                style: textTheme.headlineMedium,
-                textAlign: TextAlign.center,
-              ),
               const SizedBox(height: 16),
-              // V3: Subtítulo (Usa o Tema V3)
-              Text(
-                "O Procs AI funciona como um jogo. Para te lembrar das suas 'Missões Diárias', enviar seus pontos e avisar quando seu ranking subir, precisamos enviar notificações.",
-                // V3: TEMA (Substitui AppTheme.secondaryText V1)
-                style: textTheme.bodyMedium?.copyWith(
-                  height: 1.5,
+              if (!_showConfig) ...[
+                const Icon(Icons.notifications_active_rounded,
+                    size: 64, color: Color(0xFFD4AF37)),
+                const SizedBox(height: 24),
+                Text(
+                  "Não deixe o acaso controlar sua rotina.",
+                  style: textTheme.headlineMedium,
+                  textAlign: TextAlign.center,
                 ),
-                textAlign: TextAlign.center,
-              ),
-              const Spacer(flex: 3),
-              // V3: Botão Primário (Usa o Tema V3)
-              ElevatedButton(
-                // [CORREÇÃO] 9. Alterado para referência de método
-                onPressed: _onActivate,
-                child: const Text('Ativar Notificações'),
-              ),
-              const SizedBox(height: 12),
-              // V3: Botão Secundário (Usa o Tema V3)
-              TextButton(
-                // [CORREÇÃO] 10. Alterado para referência de método
-                onPressed: _onSkip,
-                child: Text(
-                  "Pular por enquanto",
-                  // V3: TEMA (Substiti AppTheme.secondaryText V1)
-                  style: textTheme.bodyMedium?.copyWith(
-                    color: textTheme.bodyMedium?.color, // V3: Cinza (Tema)
+                const SizedBox(height: 16),
+                Text(
+                  "O Procs AI é um sistema ativo. Ative as notificações para receber lembretes estratégicos de treino, cardio e alimentação exatamente quando você precisa. Sem spam, apenas execução.",
+                  style: textTheme.bodyMedium,
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 40),
+                ElevatedButton(
+                  onPressed: _onActivate,
+                  child: const Text('Ativar Sistema de Alertas'),
+                ),
+                const SizedBox(height: 16),
+                TextButton(
+                  onPressed: _onSkip,
+                  child: Text("Configurar depois", style: textTheme.bodyMedium),
+                ),
+              ] else ...[
+                // --- FASE 2: CONFIGURAÇÃO ---
+                Text(
+                  "Configure sua Rotina",
+                  style: textTheme.headlineMedium,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  "Defina seus horários agora para a IA otimizar seu cronograma.",
+                  style: textTheme.bodyMedium,
+                ),
+                const SizedBox(height: 32),
+
+                // 1. TREINO
+                if (data.scheduleTimesPerWeek != null)
+                  _NotificationConfigCard(
+                    title: "Treino (${data.scheduleTimesPerWeek}x/sem)",
+                    icon: Icons.fitness_center,
+                    onTap: () => _configureTraining(provider),
+                    isConfigured: false, // Lógica de estado viria do provider
+                  ),
+
+                // 2. CARDIO
+                if (data.cardioPreference == 'sim')
+                  _NotificationConfigCard(
+                    title: "Cardio (${data.cardioTimesPerWeek}x/sem)",
+                    icon: Icons.directions_run,
+                    onTap: () {}, // Implementar modal
+                    isConfigured: false,
+                  ),
+
+                // 3. COMPRAS
+                _NotificationConfigCard(
+                  title: "Compras de Mercado",
+                  icon: Icons.shopping_cart,
+                  onTap: () {}, // Implementar modal
+                  isConfigured: false,
+                ),
+
+                // 4. REFEIÇÕES
+                _NotificationConfigCard(
+                  title: "Refeições (${data.mealCount}x/dia)",
+                  icon: Icons.restaurant,
+                  onTap: () {}, // Implementar modal
+                  isConfigured: false,
+                ),
+
+                const SizedBox(height: 24),
+                Center(
+                  child: TextButton(
+                    onPressed: _navigateToNext,
+                    child: const Text("Pular configuração fina (Padrão IA)"),
                   ),
                 ),
+              ],
+              const SizedBox(height: 40),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _NotificationConfigCard extends StatelessWidget {
+  final String title;
+  final IconData icon;
+  final VoidCallback onTap;
+  final bool isConfigured;
+
+  const _NotificationConfigCard({
+    required this.title,
+    required this.icon,
+    required this.onTap,
+    required this.isConfigured,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12.0),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: theme.cardTheme.color,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color:
+                  isConfigured ? theme.colorScheme.primary : Colors.transparent,
+            ),
+          ),
+          child: Row(
+            children: [
+              Icon(icon, color: theme.colorScheme.primary),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Text(title, style: theme.textTheme.bodyLarge),
               ),
-              const SizedBox(height: 16),
+              Icon(
+                isConfigured ? Icons.check_circle : Icons.arrow_forward_ios,
+                size: 16,
+                color: isConfigured ? theme.colorScheme.primary : Colors.grey,
+              ),
             ],
           ),
         ),

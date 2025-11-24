@@ -10,6 +10,7 @@ import '../../application/onboarding_provider.dart';
 // V3 (NOVOS IMPORTS): Widgets reutilizáveis
 import '../widgets/premium_progress_bar.dart';
 import '../widgets/premium_selection_card.dart';
+import '../widgets/procs_back_button.dart';
 
 /// NOVA TELA (Passo 15/15): O usuário informa a região do Brasil para otimizar a dieta.
 /// REFACTOR: Última etapa de coleta, ajustada para UX premium.
@@ -79,7 +80,7 @@ class _UserLocationScreenState extends State<UserLocationScreen> {
         padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
         child: ElevatedButton(
           onPressed: canContinue ? _onNext : null,
-          child: const Text('Continuar'),
+          child: const Text('Finalizar'),
         ),
       ),
 
@@ -94,15 +95,11 @@ class _UserLocationScreenState extends State<UserLocationScreen> {
                   const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
               child: Row(
                 children: [
-                  GestureDetector(
-                    onTap: () => Navigator.of(context).pop(),
-                    child: Icon(Icons.arrow_back,
-                        color: theme.colorScheme.onSurface),
-                  ),
+                  const ProcsBackButton(),
                   const SizedBox(width: 16),
                   const Expanded(
                     // Progress bar: 15/15 (Completa!)
-                    child: PremiumProgressBar(progress: 16 / 17),
+                    child: PremiumProgressBar(progress: 16 / 16),
                   ),
                 ],
               ),

@@ -7,6 +7,7 @@ import '../../../../core/services/haptic_service.dart'; // <-- V3
 import '../widgets/premium_progress_bar.dart'; // Importa a barra premium
 import '../widgets/premium_selection_card.dart'; // Importa o card padrão (sem ícone)
 import 'schedule_screen.dart'; // Próxima tela (1.8)
+import '../widgets/procs_back_button.dart';
 
 class ExperienceScreen extends StatefulWidget {
   const ExperienceScreen({super.key});
@@ -83,15 +84,11 @@ class _ExperienceScreenState extends State<ExperienceScreen> {
                   const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
               child: Row(
                 children: [
-                  GestureDetector(
-                    onTap: () => Navigator.of(context).pop(),
-                    child: Icon(Icons.arrow_back,
-                        color: theme.colorScheme.onSurface),
-                  ),
+                  const ProcsBackButton(),
                   const SizedBox(width: 16),
                   const Expanded(
                     // Usa a barra premium
-                    child: PremiumProgressBar(progress: 4 / 17),
+                    child: PremiumProgressBar(progress: 4 / 16),
                   ),
                 ],
               ),

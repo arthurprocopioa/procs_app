@@ -9,6 +9,7 @@ import '../../../../core/services/haptic_service.dart'; // V3: Haptics
 import '../widgets/premium_progress_bar.dart'; // V3: Novo Widget de Progresso
 import '../widgets/premium_selection_card.dart'; // V3: Novo Widget de Card
 import 'target_weight_screen.dart';
+import '../widgets/procs_back_button.dart';
 
 class ObjectiveScreen extends StatefulWidget {
   const ObjectiveScreen({super.key});
@@ -66,15 +67,11 @@ class _ObjectiveScreenState extends State<ObjectiveScreen> {
                   const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
               child: Row(
                 children: [
-                  GestureDetector(
-                    onTap: () => Navigator.of(context).pop(),
-                    child: Icon(Icons.arrow_back,
-                        color: theme.colorScheme.onSurface),
-                  ),
+                  const ProcsBackButton(),
                   const SizedBox(width: 16),
                   const Expanded(
                     // Usa a nova barra de progresso
-                    child: PremiumProgressBar(progress: 2 / 17),
+                    child: PremiumProgressBar(progress: 2 / 16),
                   ),
                 ],
               ),

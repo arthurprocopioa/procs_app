@@ -11,6 +11,7 @@ import '../../application/onboarding_provider.dart';
 // V3 (NOVOS IMPORTS): Widgets reutilizáveis
 import '../widgets/premium_progress_bar.dart';
 import '../widgets/premium_selection_card.dart';
+import '../widgets/procs_back_button.dart';
 
 /// Tela 1.17: O usuário informa interesse em suplementação (Passo 14/15).
 class SupplementsScreen extends StatefulWidget {
@@ -73,7 +74,7 @@ class _SupplementsScreenState extends State<SupplementsScreen> {
         child: ElevatedButton(
           onPressed: canContinue ? _onNext : null,
           // 3. Texto do botão alterado para "Finalizar"
-          child: const Text('Finalizar'),
+          child: const Text('Continuar'),
         ),
       ),
 
@@ -88,11 +89,7 @@ class _SupplementsScreenState extends State<SupplementsScreen> {
                   const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
               child: Row(
                 children: [
-                  GestureDetector(
-                    onTap: () => Navigator.of(context).pop(),
-                    child: Icon(Icons.arrow_back,
-                        color: theme.colorScheme.onSurface),
-                  ),
+                  const ProcsBackButton(),
                   const SizedBox(width: 16),
                   const Expanded(
                     // Progress bar: 14/15

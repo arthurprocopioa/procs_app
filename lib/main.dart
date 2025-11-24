@@ -18,7 +18,8 @@ import 'features/onboarding/application/onboarding_provider.dart';
 // import 'package:firebase_auth/firebase_auth.dart';
 
 // Importação da tela de boas-vindas
-import 'features/onboarding/presentation/screens/welcome_screen.dart';
+import 'features/onboarding/presentation/screens/welcome_screen.dart'; // Tela de início do aplicativo
+// import 'features/onboarding/presentation/screens/result_ready_screen.dart'; // Para direcionar para tela que precisamos
 
 /// V3.5.10 (FIX): Arquitetura de Provider (sem 'sl', 'locator' ou 'AuthService')
 Future<

@@ -9,8 +9,13 @@ class AppTheme {
   // V3: Definições da Paleta (Briefing)
   // ---
   static const Color _accentBrand = Color(0xFFD4AF37);
-  static const Color _background = Color(0xFF121212);
+
+  // MUDANÇA CRÍTICA: Preto Imersivo Puro
+  static const Color _background = Color(0xFF000000); // Antes era 0xFF121212
+
+  // Mantemos o secundário para contraste em cards/inputs
   static const Color _backgroundSecondary = Color(0xFF1E1E1E);
+
   static const Color _ctaPrimaryBackground = Color(0xFFFFFFFF);
   static const Color _ctaPrimaryText = Color(0xFF1C1C1E);
   static const Color _textPrimary = Color(0xFFFFFFFF);
@@ -24,7 +29,8 @@ class AppTheme {
   static const Color primaryGold = Color(0xFFDDAA33);
 
   @Deprecated('Refatorar para usar Theme.of(context).scaffoldBackgroundColor')
-  static const Color darkBackground = Color(0xFF121212);
+  static const Color darkBackground =
+      Color(0xFF000000); // Atualizado para refletir a mudança
 
   @Deprecated(
       'Refatorar para usar Theme.of(context).colorScheme.surfaceContainer')
@@ -51,8 +57,8 @@ class AppTheme {
     const ColorScheme colorSchemeV3 = ColorScheme.dark(
       primary: _accentBrand,
       secondary: _accentBrand,
-      surface: _background,
-      surfaceContainer: _backgroundSecondary, // #1E1E1E
+      surface: _background, // Agora é Preto Puro
+      surfaceContainer: _backgroundSecondary, // #1E1E1E (Cards/Inputs)
       onSurface: _textPrimary,
       onPrimary: _ctaPrimaryText,
       onSecondary: _ctaPrimaryText,
@@ -104,7 +110,7 @@ class AppTheme {
     // 3. Tema V3
     return ThemeData(
       brightness: Brightness.dark,
-      scaffoldBackgroundColor: _background,
+      scaffoldBackgroundColor: _background, // Preto Puro
       primaryColor: _accentBrand,
       colorScheme: colorSchemeV3,
       textTheme: textThemeV3,
@@ -115,7 +121,7 @@ class AppTheme {
 
       // AppBar V3
       appBarTheme: AppBarTheme(
-        backgroundColor: _background, // Fundo V3
+        backgroundColor: _background, // Fundo Preto Puro
         elevation: 0,
         centerTitle: true,
         iconTheme: const IconThemeData(color: _textPrimary), // Back button
@@ -139,7 +145,8 @@ class AppTheme {
       // Card V3 (FINALMENTE CORRIGIDO)
       cardTheme: CardThemeData(
         // <-- CORRIGIDO PARA CardThemeData
-        color: _backgroundSecondary, // #1E1E1E
+        color:
+            _backgroundSecondary, // #1E1E1E (Mantém contraste com o fundo preto)
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),

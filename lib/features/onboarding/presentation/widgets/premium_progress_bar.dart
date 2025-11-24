@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-/// V3 (PONTO 3): A nova barra de progresso premium.
-/// Substitui o LinearProgressIndicator "ofuscado".
+/// V4 (DESIGN PREMIUM): Barra de progresso refinada e minimalista.
+/// Estilo "Zing": Mais fina, sem sombras pesadas, foco na elegância.
 class PremiumProgressBar extends StatelessWidget {
   final double progress; // 0.0 a 1.0
 
@@ -14,33 +14,36 @@ class PremiumProgressBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    // Garante que o progresso nunca seja menor que um valor mínimo
-    // para que a barra sempre tenha uma "cabeça" visível.
-    final displayProgress = progress.clamp(0.02, 1.0);
+    // Garante um progresso mínimo visível para não "sumir"
+    final displayProgress = progress.clamp(0.0, 1.0);
 
     return Container(
-      height: 8.0, // Altura mais "grossa"
+      // REDUÇÃO DE ESPESSURA: De 8.0 para 4.0 (ou 2.0 se quiser ultra-fino)
+      height: 4.0,
       width: double.infinity,
+      alignment: Alignment.centerLeft,
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainer, // Fundo cinza
-        borderRadius: BorderRadius.circular(4.0),
+        // Fundo do trilho: Cinza muito escuro e sutil
+        color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
+        borderRadius: BorderRadius.circular(2.0), // Bordas arredondadas finas
       ),
-      // Usa um FractionallySizedBox para "preencher" a barra
       child: FractionallySizedBox(
-        alignment: Alignment.centerLeft,
         widthFactor: displayProgress,
-        // AnimatedContainer para suavizar a mudança entre as telas
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 300),
+          duration:
+              const Duration(milliseconds: 500), // Animação mais suave e lenta
+          curve: Curves.fastOutSlowIn, // Curva de animação mais elegante
           decoration: BoxDecoration(
-            color: theme.colorScheme.primary, // Cor Dourada
-            borderRadius: BorderRadius.circular(4.0),
-            // V3: Adiciona um brilho premium à barra
+            // Cor Dourada
+            color: theme.colorScheme.primary,
+            borderRadius: BorderRadius.circular(2.0),
+            // Sombra REMOVIDA ou muito sutil para o look "flat" e limpo
             boxShadow: [
               BoxShadow(
-                color: theme.colorScheme.primary.withOpacity(0.5),
-                blurRadius: 8.0,
-                spreadRadius: -2.0,
+                color: theme.colorScheme.primary.withOpacity(0.4),
+                blurRadius: 6.0,
+                offset: const Offset(0, 0), // Glow centralizado
+                spreadRadius: 0.0,
               ),
             ],
           ),

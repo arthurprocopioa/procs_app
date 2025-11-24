@@ -1,18 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'meal_routine_screen.dart'; // Próxima tela (1.13/15)
-// ---
-// IMPORTS V3 (Fundação)
-// ---
+import 'meal_routine_screen.dart'; // Próxima tela
 import '../../../../core/services/analytics_service.dart';
 import '../../../../core/services/haptic_service.dart';
 import '../../application/onboarding_provider.dart';
-// V3 (NOVOS IMPORTS): Widgets reutilizáveis
 import '../widgets/premium_progress_bar.dart';
-import '../widgets/premium_selection_card.dart'; // Para seleção única/múltipla
+import '../widgets/premium_selection_card.dart';
+import '../widgets/procs_back_button.dart'; // Botão de voltar minimalista
 
-/// Tela 1.14: Início da "Fase 2 - Dieta" (Passo 12/15).
-/// Refatorada para Fundação V3, UI Premium e lógica de exclusividade.
+/// Tela 1.14: Início da "Fase 2 - Dieta" (Passo 12/17).
+/// REFACTOR FINAL: Correção da lógica de seleção exclusiva "Não tenho restrição".
 class DietRestrictionsScreen extends StatefulWidget {
   const DietRestrictionsScreen({super.key});
 
@@ -21,7 +18,6 @@ class DietRestrictionsScreen extends StatefulWidget {
 }
 
 class _DietRestrictionsScreenState extends State<DietRestrictionsScreen> {
-  // V3: Lógica V1 (Chaves) mantida, mas agora como um Map V3
   final Map<String, String> _restrictionOptions = {
     'vegano': 'Vegano',
     'vegetariano': 'Vegetariano',
@@ -29,20 +25,17 @@ class _DietRestrictionsScreenState extends State<DietRestrictionsScreen> {
     'sem_lactose': 'Sem Lactose',
   };
 
-  // Controller e FocusNode para a opção "Outros"
-  final TextEditingController _otherRestrictionController =
-      TextEditingController();
+  late final TextEditingController _otherRestrictionController;
   final FocusNode _otherRestrictionFocusNode = FocusNode();
 
   @override
   void initState() {
     super.initState();
-    // V3: Inicializa o controller com o dado do provider (se existir)
     final initialOther =
         context.read<OnboardingProvider>().data.dietOtherRestriction;
-    _otherRestrictionController.text = initialOther ?? '';
+    _otherRestrictionController =
+        TextEditingController(text: initialOther ?? '');
 
-    // V3: Analytics
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<AnalyticsService>(context, listen: false)
           .trackScreenView('diet_restrictions');
@@ -56,24 +49,20 @@ class _DietRestrictionsScreenState extends State<DietRestrictionsScreen> {
     super.dispose();
   }
 
-  /// V3: Ação de 'Próximo'
   void _onNext() {
-    // V3: Haptics
     HapticService.mediumImpact();
-    FocusScope.of(context).unfocus(); // Fecha o teclado com segurança
+    FocusScope.of(context).unfocus();
 
     final provider = context.read<OnboardingProvider>();
     final data = provider.data;
 
-    // 1. Salva o campo "Outros" (apenas se 'Outros' estiver entre as restrições)
+    // Salva o campo "Outros" se necessário
     if (data.dietRestrictions.contains('outros')) {
       provider.setDietOtherRestriction(_otherRestrictionController.text.trim());
     } else {
-      // Se não tem 'outros' selecionado, garante que o campo está limpo no provider
       provider.setDietOtherRestriction(null);
     }
 
-    // 2. Analytics
     context.read<AnalyticsService>().trackEvent(
       'onboarding_diet_restrictions_set',
       parameters: {
@@ -83,10 +72,9 @@ class _DietRestrictionsScreenState extends State<DietRestrictionsScreen> {
       },
     );
 
-    // V3: Navegação
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => const MealRoutineScreen(), // Navega para 13/15
+        builder: (context) => const MealRoutineScreen(),
       ),
     );
   }
@@ -98,18 +86,14 @@ class _DietRestrictionsScreenState extends State<DietRestrictionsScreen> {
     final provider = context.watch<OnboardingProvider>();
     final data = provider.data;
 
-    // A validação é sempre TRUE se o usuário não tiver restrições,
-    // ou se tiver pelo menos uma restrição (incluindo 'outros').
+    // Validação: Pode continuar se "Não tenho" for true OU se tiver alguma restrição marcada
     final bool canContinue =
         data.dietHasNoRestrictions || data.dietRestrictions.isNotEmpty;
 
     final bool showOtherTextField = data.dietRestrictions.contains('outros');
 
     return Scaffold(
-      // 1. AppBar removido
       appBar: null,
-
-      // 2. Botão de Continuação fixado no rodapé
       bottomNavigationBar: Padding(
         padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
         child: ElevatedButton(
@@ -117,33 +101,25 @@ class _DietRestrictionsScreenState extends State<DietRestrictionsScreen> {
           child: const Text('Continuar'),
         ),
       ),
-
-      // 3. Body para a barra de navegação customizada e conteúdo
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // BARRA DE PROGRESSO E BOTÃO DE VOLTAR (Passo 12/15)
+            // Barra de Progresso (12/17) e Botão Voltar
             Padding(
               padding:
                   const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
               child: Row(
                 children: [
-                  GestureDetector(
-                    onTap: () => Navigator.of(context).pop(),
-                    child: Icon(Icons.arrow_back,
-                        color: theme.colorScheme.onSurface),
-                  ),
+                  const ProcsBackButton(),
                   const SizedBox(width: 16),
                   const Expanded(
-                    // Progress bar: 12/15
                     child: PremiumProgressBar(progress: 12 / 17),
                   ),
                 ],
               ),
             ),
 
-            // CONTEÚDO ROLÁVEL
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(horizontal: 24.0),
@@ -151,14 +127,12 @@ class _DietRestrictionsScreenState extends State<DietRestrictionsScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     const SizedBox(height: 16),
-                    // Título (V3)
                     Text(
                       "Você tem alguma restrição alimentar?",
                       style: textTheme.headlineMedium,
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 12),
-                    // Subtítulo (V3)
                     Text(
                       "Isso nos ajuda a criar a dieta ideal. Pode marcar mais de uma.",
                       style: textTheme.bodyMedium,
@@ -166,7 +140,7 @@ class _DietRestrictionsScreenState extends State<DietRestrictionsScreen> {
                     ),
                     const SizedBox(height: 32),
 
-                    // --- NOVO CARD: NÃO TENHO RESTRIÇÃO (EXCLUSIVO) ---
+                    // CARD EXCLUSIVO: NÃO TENHO RESTRIÇÃO
                     Padding(
                       padding: const EdgeInsets.only(bottom: 16.0),
                       child: PremiumSelectionCard(
@@ -174,145 +148,92 @@ class _DietRestrictionsScreenState extends State<DietRestrictionsScreen> {
                         isSelected: data.dietHasNoRestrictions,
                         onTap: () {
                           HapticService.lightImpact();
+                          // Toggle simples: se clicar, ativa e limpa o resto (lógica no Provider)
+                          // Se já estiver ativo e clicar de novo, desativa (fica tudo vazio)
                           provider.setDietHasNoRestrictions(
                               !data.dietHasNoRestrictions);
-                          FocusScope.of(context).unfocus(); // Fecha teclado
+
+                          // Limpa o foco e o texto de outros se desmarcar restrições
+                          _otherRestrictionController.clear();
+                          FocusScope.of(context).unfocus();
                         },
                       ),
                     ),
 
-                    // --- SELEÇÃO MÚLTIPLA (Restrições Padrão) ---
+                    // SELEÇÃO MÚLTIPLA
                     ..._restrictionOptions.entries.map((entry) {
-                      return _buildRestrictionCard(
-                        key: entry.key,
-                        text: entry.value,
-                        provider: provider,
-                        isNoRestrictionActive: data.dietHasNoRestrictions,
+                      final isSelected =
+                          data.dietRestrictions.contains(entry.key);
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 6.0),
+                        child: PremiumSelectionCard(
+                          text: entry.value,
+                          isSelected: isSelected,
+                          onTap: () {
+                            HapticService.lightImpact();
+                            // CORREÇÃO: Sempre permite clicar.
+                            // O Provider cuidará de desmarcar "Não tenho restrição" automaticamente.
+                            provider.toggleDietRestriction(entry.key);
+                          },
+                        ),
                       );
                     }),
 
-                    // --- NOVA OPÇÃO: OUTROS ---
-                    _buildRestrictionCard(
-                      key: 'outros',
-                      text: 'Outros',
-                      provider: provider,
-                      isNoRestrictionActive: data.dietHasNoRestrictions,
-                    ),
+                    // OPÇÃO OUTROS
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 6.0),
+                      child: Column(
+                        children: [
+                          PremiumSelectionCard(
+                            text: "Outros",
+                            isSelected: showOtherTextField,
+                            onTap: () {
+                              HapticService.lightImpact();
+                              provider.toggleDietRestriction('outros');
 
-                    // --- TEXTFIELD CONDICIONAL PARA OUTROS ---
-                    AnimatedOpacity(
-                      opacity: showOtherTextField ? 1.0 : 0.0,
-                      duration: const Duration(milliseconds: 300),
-                      child: Visibility(
-                        visible: showOtherTextField,
-                        maintainState: true,
-                        child: Padding(
-                          padding: const EdgeInsets.only(top: 24.0),
-                          child: TextField(
-                            controller: _otherRestrictionController,
-                            focusNode: _otherRestrictionFocusNode,
-                            decoration: const InputDecoration(
-                              labelText: 'Quais outras restrições?',
-                            ),
-                            style: textTheme.bodyLarge,
-                            maxLines: 2,
-                            textInputAction:
-                                TextInputAction.done, // OK/Concluir
-                            onSubmitted: (_) {
-                              FocusScope.of(context).unfocus();
+                              if (!showOtherTextField) {
+                                Future.delayed(
+                                    const Duration(milliseconds: 200), () {
+                                  _otherRestrictionFocusNode.requestFocus();
+                                });
+                              } else {
+                                FocusScope.of(context).unfocus();
+                              }
                             },
                           ),
-                        ),
+
+                          // Campo de texto animado
+                          AnimatedSize(
+                            duration: const Duration(milliseconds: 300),
+                            curve: Curves.easeInOut,
+                            alignment: Alignment.topCenter,
+                            child: showOtherTextField
+                                ? Padding(
+                                    padding: const EdgeInsets.only(top: 12.0),
+                                    child: TextField(
+                                      controller: _otherRestrictionController,
+                                      focusNode: _otherRestrictionFocusNode,
+                                      decoration: const InputDecoration(
+                                        labelText: 'Quais outras restrições?',
+                                      ),
+                                      style: textTheme.bodyLarge,
+                                      textInputAction: TextInputAction.done,
+                                      onSubmitted: (_) =>
+                                          FocusScope.of(context).unfocus(),
+                                    ),
+                                  )
+                                : const SizedBox.shrink(),
+                          ),
+                        ],
                       ),
                     ),
 
-                    const SizedBox(height: 64), // Espaço para o botão
+                    const SizedBox(height: 64),
                   ],
                 ),
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-
-  /// Helper V3: Constrói os cards de restrição (Seleção Múltipla)
-  Widget _buildRestrictionCard({
-    required String key,
-    required String text,
-    required OnboardingProvider provider,
-    required bool isNoRestrictionActive,
-  }) {
-    // DESABILITA TODOS OS CARDS SE "NÃO TENHO RESTRIÇÃO" ESTIVER ATIVO
-    final bool isEnabled = !isNoRestrictionActive;
-    final bool isSelected = provider.data.dietRestrictions.contains(key);
-
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
-    // Cor do texto quando o card está desabilitado
-    final Color disabledTextColor =
-        theme.colorScheme.onSurface.withOpacity(0.3);
-    // Cor da borda quando o card está desabilitado
-    final Color disabledBorderColor = theme.colorScheme.surfaceContainer;
-
-    // Se estiver desabilitado, o onTap é nulo.
-    final VoidCallback? onTap = isEnabled
-        ? () {
-            HapticService.lightImpact();
-            provider.toggleDietRestriction(key);
-            // Move o foco para o campo "Outros" se for a opção 'outros'
-            if (key == 'outros' && !isSelected) {
-              Future.delayed(const Duration(milliseconds: 100), () {
-                _otherRestrictionFocusNode.requestFocus();
-              });
-            } else {
-              _otherRestrictionFocusNode.unfocus();
-            }
-          }
-        : null;
-
-    // Usamos o design de card limpo (Seleção Múltipla - Borda Dourada)
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: GestureDetector(
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-          decoration: BoxDecoration(
-            color: isSelected && isEnabled
-                ? colorScheme.primary.withOpacity(0.1)
-                : theme.cardTheme.color,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: isSelected && isEnabled
-                  ? colorScheme.primary
-                  : disabledBorderColor,
-              width: isSelected && isEnabled ? 2.0 : 1.0,
-            ),
-            boxShadow: isSelected && isEnabled
-                ? [
-                    BoxShadow(
-                      color: colorScheme.primary.withOpacity(0.15),
-                      blurRadius: 12.0,
-                      offset: const Offset(0, 2),
-                    ),
-                  ]
-                : [],
-          ),
-          child: Text(
-            text,
-            textAlign: TextAlign.left,
-            style: theme.textTheme.bodyLarge?.copyWith(
-              fontWeight:
-                  isSelected && isEnabled ? FontWeight.w600 : FontWeight.normal,
-              color: isEnabled
-                  ? (isSelected ? colorScheme.primary : colorScheme.onSurface)
-                  : disabledTextColor,
-            ),
-          ),
         ),
       ),
     );

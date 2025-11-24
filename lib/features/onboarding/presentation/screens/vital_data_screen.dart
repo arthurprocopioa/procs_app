@@ -8,6 +8,7 @@ import '../../../../core/services/haptic_service.dart';
 import '../../application/onboarding_provider.dart';
 import '../widgets/premium_progress_bar.dart';
 import 'objective_screen.dart';
+import '../widgets/procs_back_button.dart';
 
 class VitalDataScreen extends StatefulWidget {
   const VitalDataScreen({super.key});
@@ -239,14 +240,10 @@ class _VitalDataScreenState extends State<VitalDataScreen> {
                   const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
               child: Row(
                 children: [
-                  GestureDetector(
-                    onTap: () => Navigator.of(context).pop(),
-                    child: Icon(Icons.arrow_back,
-                        color: theme.colorScheme.onSurface),
-                  ),
+                  const ProcsBackButton(),
                   const SizedBox(width: 16),
                   const Expanded(
-                    child: PremiumProgressBar(progress: 1 / 17),
+                    child: PremiumProgressBar(progress: 1 / 16),
                   ),
                 ],
               ),

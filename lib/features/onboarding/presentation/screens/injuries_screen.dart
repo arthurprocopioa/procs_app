@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'cardio_screen.dart'; // Próxima tela (1.12)
+// REFACTOR: Agora aponta para a tela de Condições de Saúde (9/17)
+import 'health_conditions_screen.dart';
 import '../../../../core/services/analytics_service.dart';
 import '../../../../core/services/haptic_service.dart';
 import '../../application/onboarding_provider.dart';
-// V3 (PONTO 7): Importando o novo card premium
 import '../widgets/premium_selection_card.dart';
-// V3 (NOVOS IMPORTS): Widgets reutilizáveis
 import '../widgets/premium_progress_bar.dart';
+import '../widgets/procs_back_button.dart';
 
 /// Tela 1.11: Onde o usuário informa sobre lesões (Lógica V3).
-/// Refatorada para o novo padrão de UX (Barra no topo, Botão no rodapé)
+/// REFACTOR: Navegação atualizada para HealthConditionsScreen.
 class InjuriesScreen extends StatefulWidget {
   const InjuriesScreen({super.key});
 
@@ -52,7 +52,7 @@ class _InjuriesScreenState extends State<InjuriesScreen> {
     if (_hasInjury == null) return;
     HapticService.mediumImpact();
 
-    // CORREÇÃO DO BUG: Remove o foco de forma segura, como na tela anterior.
+    // CORREÇÃO DO BUG: Remove o foco de forma segura
     FocusScope.of(context).unfocus();
 
     final provider = context.read<OnboardingProvider>();
@@ -70,9 +70,10 @@ class _InjuriesScreenState extends State<InjuriesScreen> {
       },
     );
 
-    // Próxima tela (Note que esta é a nova etapa 10, devido às 2 novas telas)
+    // REFACTOR: Navega para a tela de Condições de Saúde (Passo 9/17)
+    // (Anteriormente ia para CardioScreen)
     Navigator.of(context).push(MaterialPageRoute(
-      builder: (context) => const CardioScreen(),
+      builder: (context) => const HealthConditionsScreen(),
     ));
   }
 
@@ -80,10 +81,8 @@ class _InjuriesScreenState extends State<InjuriesScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final textTheme = theme.textTheme;
-    final colorScheme = theme.colorScheme;
 
-    // Ouve as mudanças do provider para reavaliar o botão (embora não seja
-    // estritamente necessário aqui, é boa prática para o layout).
+    // Ouve as mudanças do provider
     context.watch<OnboardingProvider>();
 
     final bool canContinue = _hasInjury != null;
@@ -94,7 +93,6 @@ class _InjuriesScreenState extends State<InjuriesScreen> {
       appBar: null,
 
       // 2. Botão de Ação (Inferior Fixo - V3 UI)
-      // CORREÇÃO do Bug: Movido para o bottomNavigationBar para NUNCA sumir
       bottomNavigationBar: Padding(
         padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
         child: ElevatedButton(
@@ -103,26 +101,22 @@ class _InjuriesScreenState extends State<InjuriesScreen> {
         ),
       ),
 
-      // 3. Body para a barra de navegação customizada e conteúdo
+      // 3. Body
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // BARRA DE PROGRESSO E BOTÃO DE VOLTAR (Passo 8/15)
+            // BARRA DE PROGRESSO E BOTÃO DE VOLTAR (Passo 8/17 - Mantido)
             Padding(
               padding:
                   const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
               child: Row(
                 children: [
-                  GestureDetector(
-                    onTap: () => Navigator.of(context).pop(),
-                    child: Icon(Icons.arrow_back,
-                        color: theme.colorScheme.onSurface),
-                  ),
+                  const ProcsBackButton(),
                   const SizedBox(width: 16),
                   const Expanded(
-                    // Nova barra de progresso (8/15)
-                    child: PremiumProgressBar(progress: 8 / 17),
+                    // Barra de progresso (8/17)
+                    child: PremiumProgressBar(progress: 8 / 16),
                   ),
                 ],
               ),
@@ -130,8 +124,6 @@ class _InjuriesScreenState extends State<InjuriesScreen> {
 
             // CONTEÚDO ROLÁVEL
             Expanded(
-              // V3 (PONTO 8b & 15): Adiciona SingleChildScrollView para
-              // corrigir o overflow do teclado e o bug de zoom.
               child: SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(horizontal: 24.0),
                 child: Column(
@@ -145,7 +137,7 @@ class _InjuriesScreenState extends State<InjuriesScreen> {
                     ),
                     const SizedBox(height: 32),
 
-                    // V3 (PONTO 7): Card para "Sim" (Design Dourado)
+                    // V3: Card para "Sim"
                     Padding(
                       padding: const EdgeInsets.only(bottom: 16),
                       child: PremiumSelectionCard(
@@ -156,7 +148,6 @@ class _InjuriesScreenState extends State<InjuriesScreen> {
                           setState(() {
                             _hasInjury = true;
                           });
-                          // Move o foco para o campo de texto
                           Future.delayed(const Duration(milliseconds: 100), () {
                             _injuryFocusNode.requestFocus();
                           });
@@ -164,7 +155,7 @@ class _InjuriesScreenState extends State<InjuriesScreen> {
                       ),
                     ),
 
-                    // V3 (PONTO 7): Card para "Não" (Design Dourado)
+                    // V3: Card para "Não"
                     PremiumSelectionCard(
                       text: 'Não',
                       isSelected: _hasInjury == false,
@@ -173,7 +164,6 @@ class _InjuriesScreenState extends State<InjuriesScreen> {
                         setState(() {
                           _hasInjury = false;
                         });
-                        // Fecha o teclado se "Não" for selecionado
                         FocusScope.of(context).unfocus();
                       },
                     ),
@@ -184,7 +174,7 @@ class _InjuriesScreenState extends State<InjuriesScreen> {
                       duration: const Duration(milliseconds: 300),
                       child: Visibility(
                         visible: showSubSelection,
-                        maintainState: true, // Mantém o estado do controller
+                        maintainState: true,
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -201,20 +191,14 @@ class _InjuriesScreenState extends State<InjuriesScreen> {
                               style: theme.textTheme.bodyMedium,
                             ),
                             const SizedBox(height: 16),
-
-                            // V3 (PONTO 8a & 13): Corrigido
                             TextField(
                               controller: _injuryController,
-                              focusNode:
-                                  _injuryFocusNode, // V3: Controla o foco
+                              focusNode: _injuryFocusNode,
                               decoration: const InputDecoration(
                                 labelText: 'Descreva sua lesão aqui...',
                               ),
                               style: textTheme.bodyLarge,
                               maxLines: 5,
-                              // CORREÇÃO DO BUG: Muda a ação do teclado para DONE (OK/Concluir)
-                              // Se o usuário clicar em "Concluir" no teclado,
-                              // ele fecha, mas não navega (o botão Continuar fixo faz isso).
                               textInputAction: TextInputAction.done,
                               textCapitalization: TextCapitalization.sentences,
                             ),
@@ -222,7 +206,7 @@ class _InjuriesScreenState extends State<InjuriesScreen> {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 40), // Espaço para o botão fixo
+                    const SizedBox(height: 40),
                   ],
                 ),
               ),

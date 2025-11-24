@@ -1,20 +1,15 @@
 import 'package:flutter/foundation.dart';
 import '../domain/onboarding_data_model.dart';
 
-/// V3 (SPRINT 1): Provider (O "Entrevistador" Imutável)
-/// REFACTOR: Total de etapas ajustado para 15 (incluindo a nova User Location).
 class OnboardingProvider extends ChangeNotifier {
-  // --- CONSTANTE DE ARQUITETURA FINAL (13 originais + 2 novas de coleta) ---
-  static const int totalOnboardingSteps = 15;
-  // -------------------------------------
+  static const int totalOnboardingSteps = 17;
 
   OnboardingDataModel _data = const OnboardingDataModel();
   OnboardingDataModel get data => _data;
 
-  // ---
-  // SETTERS DE ACESSO (Módulo 1)
-  // ---
+  // ... (Métodos anteriores de nome, termos, vitais, treino mantidos igual) ...
 
+  // --- Módulo 1 ---
   void setTermsAccepted(bool accepted) {
     if (_data.termsAccepted == accepted) return;
     _data = _data.copyWith(termsAccepted: accepted);
@@ -33,10 +28,7 @@ class OnboardingProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ---
-  // SETTERS DE DADOS VITAIS (Módulo 2.1)
-  // ---
-
+  // --- Módulo 2.1 ---
   void setAge(int age) {
     if (_data.age == age) return;
     _data = _data.copyWith(age: age);
@@ -61,10 +53,7 @@ class OnboardingProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ---
-  // SETTERS DE TREINO (Módulo 2.2)
-  // ---
-
+  // --- Módulo 2.2 ---
   void setObjective(String objective) {
     if (_data.objective == objective) return;
     _data = _data.copyWith(objective: objective);
@@ -83,37 +72,18 @@ class OnboardingProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // V3 (Ref. Ponto 6 - Agenda)
-  void setScheduleMode(String mode) {
-    if (_data.scheduleMode == mode) return;
-    _data = _data.copyWith(
-      scheduleMode: mode,
-      scheduleDaysOfWeek:
-          mode == 'days_of_week' ? _data.scheduleDaysOfWeek : const <String>{},
-      scheduleTimesPerWeek:
-          mode == 'times_per_week' ? _data.scheduleTimesPerWeek : null,
-    );
-    notifyListeners();
-  }
-
-  void toggleScheduleDay(String dayKey) {
-    final newDays = Set<String>.from(_data.scheduleDaysOfWeek);
-    if (newDays.contains(dayKey)) {
-      newDays.remove(dayKey);
-    } else {
-      newDays.add(dayKey);
-    }
-    _data = _data.copyWith(scheduleDaysOfWeek: newDays);
-    notifyListeners();
-  }
-
   void setScheduleTimesPerWeek(int? times) {
     if (_data.scheduleTimesPerWeek == times) return;
     _data = _data.copyWith(scheduleTimesPerWeek: times);
     notifyListeners();
   }
 
-  // (Tela 1.8 - Equipment)
+  // NOVO: Salvar agenda de treino
+  void setTrainingNotificationSchedule(Map<String, String> schedule) {
+    _data = _data.copyWith(trainingNotificationSchedule: schedule);
+    notifyListeners();
+  }
+
   void setEquipmentLocation(String location) {
     if (_data.equipmentLocation == location) return;
     _data = _data.copyWith(equipmentLocation: location);
@@ -141,10 +111,8 @@ class OnboardingProvider extends ChangeNotifier {
   void setOtherEquipment(String text) {
     if (_data.otherEquipment == text) return;
     _data = _data.copyWith(otherEquipment: text);
-    // Nota: A notificação só é feita no momento de avançar de tela para evitar rebuilds excessivos
   }
 
-  // (Tela 1.10 - Focus Area)
   void toggleFocusArea(String areaKey) {
     final newAreas = Set<String>.from(_data.focusAreas);
     if (areaKey == 'full_body') {
@@ -166,30 +134,57 @@ class OnboardingProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // (Tela 1.11 - Injuries)
   void setInjuryData({required bool hasInjury, String? details}) {
     final String injuryDetails = (hasInjury ? details : '') ?? '';
     if (_data.hasInjury == hasInjury && _data.injuryDetails == injuryDetails) {
       return;
     }
-    _data = _data.copyWith(
-      hasInjury: hasInjury,
-      injuryDetails: injuryDetails,
-    );
+    _data = _data.copyWith(hasInjury: hasInjury, injuryDetails: injuryDetails);
     notifyListeners();
+  }
+
+  void toggleHealthCondition(String conditionKey) {
+    final newConditions = Set<String>.from(_data.healthConditions);
+    if (conditionKey == 'none') {
+      if (newConditions.contains('none')) {
+        newConditions.remove('none');
+      } else {
+        newConditions.clear();
+        newConditions.add('none');
+      }
+      setHealthConditionOther(null);
+    } else {
+      newConditions.remove('none');
+      if (newConditions.contains(conditionKey)) {
+        newConditions.remove(conditionKey);
+      } else {
+        newConditions.add(conditionKey);
+      }
+    }
+    _data = _data.copyWith(healthConditions: newConditions);
+    notifyListeners();
+  }
+
+  void setHealthConditionOther(String? text) {
+    if (text != null &&
+        text.isNotEmpty &&
+        _data.healthConditions.contains('none')) {
+      final newConditions = Set<String>.from(_data.healthConditions);
+      newConditions.remove('none');
+      _data = _data.copyWith(healthConditions: newConditions);
+      notifyListeners();
+    }
+    if (_data.healthConditionsOther == text) return;
+    _data = _data.copyWith(healthConditionsOther: text);
   }
 
   // V3 (Ref. Ponto 9 - Cardio)
   void setCardioPreference(String preference) {
     if (_data.cardioPreference == preference) return;
-
-    // Reseta todo o sub-fluxo de cardio se a preferência principal mudar
     _data = _data.copyWith(
       cardioPreference: preference,
       cardioType: null,
       cardioOtherDetail: null,
-      cardioScheduleMode: null,
-      cardioDaysOfWeek: const <String>{},
       cardioTimesPerWeek: null,
     );
     notifyListeners();
@@ -203,52 +198,29 @@ class OnboardingProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void setCardioScheduleMode(String mode) {
-    if (_data.cardioScheduleMode == mode) return;
-    _data = _data.copyWith(
-      cardioScheduleMode: mode,
-      // Reseta as outras opções ao trocar o modo
-      cardioDaysOfWeek:
-          mode == 'days_of_week' ? _data.cardioDaysOfWeek : const <String>{},
-      cardioTimesPerWeek:
-          mode == 'times_per_week' ? _data.cardioTimesPerWeek : null,
-    );
-    notifyListeners();
-  }
-
-  void toggleCardioDay(String dayKey) {
-    final newDays = Set<String>.from(_data.cardioDaysOfWeek);
-    if (newDays.contains(dayKey)) {
-      newDays.remove(dayKey);
-    } else {
-      newDays.add(dayKey);
-    }
-    _data = _data.copyWith(cardioDaysOfWeek: newDays);
-    notifyListeners();
-  }
-
   void setCardioTimesPerWeek(int? times) {
     if (_data.cardioTimesPerWeek == times) return;
     _data = _data.copyWith(cardioTimesPerWeek: times);
     notifyListeners();
   }
 
-  // NOVO SETTER: Tempo de Treino Diário (Passo 10/15)
+  // NOVO: Salvar agenda de cardio
+  void setCardioNotificationSchedule(Map<String, String> schedule) {
+    _data = _data.copyWith(cardioNotificationSchedule: schedule);
+    notifyListeners();
+  }
+
   void setTrainingTime(String? time) {
     if (_data.trainingTime == time) return;
     _data = _data.copyWith(trainingTime: time);
     notifyListeners();
   }
 
-  // ---
-  // SETTERS DE DIETA (Módulo 2.3)
-  // ---
-
+  // --- Módulo 2.3 ---
   void setDietHasNoRestrictions(bool hasNoRestrictions) {
     if (_data.dietHasNoRestrictions == hasNoRestrictions) return;
     _data = _data.copyWith(
       dietHasNoRestrictions: hasNoRestrictions,
-      // Se "Não tenho" for true, limpa as restrições
       dietRestrictions:
           hasNoRestrictions ? const <String>{} : _data.dietRestrictions,
       dietOtherRestriction:
@@ -266,7 +238,7 @@ class OnboardingProvider extends ChangeNotifier {
     }
     _data = _data.copyWith(
       dietRestrictions: newRestrictions,
-      dietHasNoRestrictions: false, // Se marcar algo, "Não tenho" é falso
+      dietHasNoRestrictions: false,
     );
     notifyListeners();
   }
@@ -274,7 +246,7 @@ class OnboardingProvider extends ChangeNotifier {
   void setDietOtherRestriction(String? text) {
     _data = _data.copyWith(
       dietOtherRestriction: text,
-      dietHasNoRestrictions: false, // Se digitar algo, "Não tenho" é falso
+      dietHasNoRestrictions: false,
     );
     notifyListeners();
   }
@@ -285,10 +257,16 @@ class OnboardingProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  // NOVO: Salvar agenda de refeições
+  void setMealNotificationSchedule(List<String> schedule) {
+    _data = _data.copyWith(mealNotificationSchedule: schedule);
+    notifyListeners();
+  }
+
   void setFoodDislikes(Set<String> dislikes) {
     if (setEquals(_data.foodDislikes, dislikes)) return;
     _data = _data.copyWith(foodDislikes: dislikes);
-    notifyListeners(); // Notifica no 'onNext'
+    notifyListeners();
   }
 
   void setInterestInSupplements(bool? interest) {
@@ -297,21 +275,34 @@ class OnboardingProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // NOVO SETTER: Localização do Usuário (Passo 15/15)
   void setUserRegion(String? region) {
     if (_data.userRegion == region) return;
     _data = _data.copyWith(userRegion: region);
     notifyListeners();
   }
 
-  // ---
-  // SETTERS DE FECHAMENTO (Módulo 2.4)
-  // ---
+  // NOVO: Compras de Mercado
+  void setGroceryShoppingFrequency(int frequency) {
+    _data = _data.copyWith(groceryShoppingFrequency: frequency);
+    notifyListeners();
+  }
 
+  void setGroceryNotificationSchedule(Map<int, String> schedule) {
+    _data = _data.copyWith(groceryNotificationSchedule: schedule);
+    notifyListeners();
+  }
+
+  // NOVO: Permissão Geral de Notificações
+  void setNotificationsEnabled(bool enabled) {
+    _data = _data.copyWith(notificationsEnabled: enabled);
+    notifyListeners();
+  }
+
+  // --- Módulo 2.4 ---
   void setPhoneNumber(String? phone) {
     if (_data.phoneNumber == phone) return;
     _data = _data.copyWith(phoneNumber: phone);
-    notifyListeners(); // Notifica no 'onNext'
+    notifyListeners();
   }
 
   void setSelectedPlan(String plan) {

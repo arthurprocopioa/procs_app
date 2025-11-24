@@ -9,6 +9,7 @@ import '../../../../core/services/haptic_service.dart';
 import '../../application/onboarding_provider.dart';
 // V3 (NOVOS IMPORTS): Widgets reutilizáveis
 import '../widgets/premium_progress_bar.dart';
+import '../widgets/procs_back_button.dart';
 
 /// Tela 1.16: O usuário informa o que NÃO gosta de comer (Passo 14/15).
 /// Refatorada para Fundação V3, UI Premium e correção de bugs do TextField.
@@ -147,15 +148,11 @@ class _FoodPreferencesScreenState extends State<FoodPreferencesScreen> {
                   const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
               child: Row(
                 children: [
-                  GestureDetector(
-                    onTap: () => Navigator.of(context).pop(),
-                    child: Icon(Icons.arrow_back,
-                        color: theme.colorScheme.onSurface),
-                  ),
+                  const ProcsBackButton(),
                   const SizedBox(width: 16),
                   const Expanded(
                     // Progress bar: 14/15
-                    child: PremiumProgressBar(progress: 14 / 17),
+                    child: PremiumProgressBar(progress: 14 / 16),
                   ),
                 ],
               ),

@@ -30,29 +30,46 @@ dependencies:
   # 4. UI/UX (V3.1)
   google_fonts: ^6.2.1
   font_awesome_flutter: ^10.7.0
-  lottie: ^3.1.2 # (V3.1: Usado para Lottie.network())
+  lottie: ^3.1.2
   
   cupertino_icons: ^1.0.2
 
-  # ---
-  # HOTFIX V3.5 (Auth Foundation)
-  # ---
   # 5. Auth Social V3
   google_sign_in: ^6.2.1 
-  sign_in_with_apple: ^6.1.0 # <-- PACOTE ADICIONADO AQUI
+  sign_in_with_apple: ^6.1.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^4.0.0
+  
+  # --- NOVAS DEPENDÊNCIAS PARA ÍCONES E SPLASH ---
+  flutter_launcher_icons: ^0.13.1
+  flutter_native_splash: ^2.4.0
 
 flutter:
   uses-material-design: true
 
-  # ---
-  # V3.1 (Hotfix Lottie)
-  # (Removemos a dependência de 'assets/lottie/' V3.0)
-  # ---
   assets:
     - assets/images/hero_image.png
-    # (V3.1: A pasta 'assets/lottie/' foi REMOVIDA para corrigir o crash V3)
+    # Certifique-se de colocar seus ícones aqui quando criá-los:
+    # - assets/images/app_icon.png
+    # - assets/images/splash_logo.png
+
+# --- CONFIGURAÇÃO DOS ÍCONES ---
+flutter_launcher_icons:
+  android: "ic_launcher"
+  ios: true
+  image_path: "assets/images/app_icon.png" # Você precisará criar este arquivo (1024x1024)
+  min_sdk_android: 21 # Otimização
+  adaptive_icon_background: "#000000" # Fundo preto para Android Adaptativo
+  adaptive_icon_foreground: "assets/images/app_icon_foreground.png" # O logo sem fundo (opcional, mas recomendado)
+
+# --- CONFIGURAÇÃO DA TELA DE CARREGAMENTO (SPLASH) ---
+flutter_native_splash:
+  color: "#000000" # Fundo PRETO IMERSIVO
+  image: "assets/images/splash_logo.png" # Seu logo centralizado (PNG transparente)
+  android_12:
+    image: "assets/images/splash_logo.png"
+    color: "#000000"
+  web: false # Web tem sua própria lógica no index.html

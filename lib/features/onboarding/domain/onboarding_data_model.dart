@@ -1,31 +1,25 @@
-// V3 (SPRINT 1): Refatorado para Agenda (Ponto 6) e Cardio (Ponto 9)
-// ignore_for_file: prefer_const_constructors_in_immutables
-
 import 'package:flutter/foundation.dart';
 
 @immutable
 class OnboardingDataModel {
-  // Módulo 1: Acesso (Telas 1.1 - 1.2)
+  // ... (Campos anteriores mantidos)
   final String? name;
   final bool termsAccepted;
-  // V3 (Ponto 15 - Terms Screen): Adicionado para UX do Zing
   final bool healthDataAccepted;
-
-  // Módulo 2.1: Dados Vitais (Tela 1.3)
   final int? age;
   final int? height;
   final double? currentWeight;
   final String? gender;
-
-  // Módulo 2.2: Treino (Telas 1.4 - 1.12)
   final String? objective;
   final double? targetWeight;
   final String? experienceLevel;
 
-  // V3 (Ref. Ponto 6 - Agenda)
-  final String? scheduleMode; // 'days_of_week' ou 'times_per_week'
-  final Set<String> scheduleDaysOfWeek;
+  // Agenda de Treino
   final int? scheduleTimesPerWeek;
+  // NOVO: Dias e Horários de Treino (Map<String, TimeOfDay>)
+  // Ex: {'monday': TimeOfDay(18, 0), 'wednesday': TimeOfDay(07, 0)}
+  // Como TimeOfDay não é serializável facilmente aqui, vamos guardar String "HH:mm"
+  final Map<String, String>? trainingNotificationSchedule;
 
   final String? equipmentLocation;
   final Set<String> homeEquipment;
@@ -33,92 +27,86 @@ class OnboardingDataModel {
   final Set<String> focusAreas;
   final bool hasInjury;
   final String? injuryDetails;
+  final Set<String> healthConditions;
+  final String? healthConditionsOther;
 
-  // V3 (Ref. Ponto 9 - Cardio)
-  final String? cardioPreference; // 'sim', 'nao', 'ia_decide'
-  final String? cardioType; // 'corrida', 'natacao', 'ciclismo', 'outros'
-  final String? cardioOtherDetail; // "Dança"
-  final String?
-      cardioScheduleMode; // 'on_days', 'days_of_week', 'times_per_week'
-  final Set<String> cardioDaysOfWeek;
+  // Cardio
+  final String? cardioPreference; // 'sim', 'nao' (IA Decide removido)
+  final String? cardioType;
+  final String? cardioOtherDetail;
   final int? cardioTimesPerWeek;
+  // NOVO: Dias e Horários de Cardio
+  final Map<String, String>? cardioNotificationSchedule;
 
-  // NOVO: Tempo de treino diário (Passo 10/15)
-  final String? trainingTime; // Ex: '30min', '60min'
-
-  // Módulo 2.3: Dieta (Telas 1.14 - 1.17)
-  // V3 (Ref. Ponto 11 - Dieta): Adicionados
+  final String? trainingTime;
   final bool dietHasNoRestrictions;
   final String? dietOtherRestriction;
   final Set<String> dietRestrictions;
-
   final int? mealCount;
+  // NOVO: Horários das Refeições (Lista ordenada "08:00", "12:00", etc)
+  final List<String>? mealNotificationSchedule;
+
   final Set<String> foodDislikes;
   final bool? interestInSupplements;
+  final String? userRegion;
 
-  // NOVO: Localização do Usuário (Passo 15/15)
-  final String? userRegion; // Ex: 'sudeste', 'sul', 'nordeste'
+  // NOVO: Compras de Mercado
+  final int? groceryShoppingFrequency; // 1x, 2x, 3x, 4x no mês
+  // Dias do mês e horário (Map<int, String>) Ex: {5: "10:00", 20: "10:00"}
+  final Map<int, String>? groceryNotificationSchedule;
 
-  // Módulo 2.4: Fechamento (Telas 1.20 - 1.24)
   final String? phoneNumber;
   final String? selectedPlan;
 
-  /// Construtor V3 (Sprint 1)
+  // Permissão Geral
+  final bool notificationsEnabled;
+
   const OnboardingDataModel({
-    // M1
     this.name,
     this.termsAccepted = false,
-    this.healthDataAccepted = false, // V3 (Ponto 15)
-    // M2.1
+    this.healthDataAccepted = false,
     this.age,
     this.height,
     this.currentWeight,
     this.gender,
-    // M2.2
     this.objective,
     this.targetWeight,
     this.experienceLevel,
-    // V3 (Ponto 6 - Agenda)
-    this.scheduleMode,
-    this.scheduleDaysOfWeek = const <String>{},
     this.scheduleTimesPerWeek,
-    //
+    this.trainingNotificationSchedule, // NOVO
     this.equipmentLocation,
     this.homeEquipment = const <String>{},
     this.otherEquipment,
     this.focusAreas = const <String>{},
     this.hasInjury = false,
     this.injuryDetails,
-    // V3 (Ponto 9 - Cardio)
+    this.healthConditions = const <String>{},
+    this.healthConditionsOther,
     this.cardioPreference,
     this.cardioType,
     this.cardioOtherDetail,
-    this.cardioScheduleMode,
-    this.cardioDaysOfWeek = const <String>{},
     this.cardioTimesPerWeek,
-    // NOVO (Tempo de Treino)
+    this.cardioNotificationSchedule, // NOVO
     this.trainingTime,
-    // M2.3
-    // V3 (Ponto 11 - Dieta)
     this.dietHasNoRestrictions = false,
     this.dietOtherRestriction,
     this.dietRestrictions = const <String>{},
-    //
     this.mealCount = 4,
+    this.mealNotificationSchedule, // NOVO
     this.foodDislikes = const <String>{},
     this.interestInSupplements,
-    // NOVO (Localização)
     this.userRegion,
-    // M2.4
+    this.groceryShoppingFrequency, // NOVO
+    this.groceryNotificationSchedule, // NOVO
     this.phoneNumber,
     this.selectedPlan,
+    this.notificationsEnabled = false, // NOVO
   });
 
-  /// Método CopyWith V3 (Sprint 1)
   OnboardingDataModel copyWith({
     String? name,
     bool? termsAccepted,
-    bool? healthDataAccepted, // V3 (Ponto 15)
+    bool? healthDataAccepted,
     int? age,
     int? height,
     double? currentWeight,
@@ -126,43 +114,40 @@ class OnboardingDataModel {
     String? objective,
     double? targetWeight,
     String? experienceLevel,
-    // V3 (Ponto 6 - Agenda)
-    String? scheduleMode,
-    Set<String>? scheduleDaysOfWeek,
     int? scheduleTimesPerWeek,
-    //
+    Map<String, String>? trainingNotificationSchedule,
     String? equipmentLocation,
     Set<String>? homeEquipment,
     String? otherEquipment,
     Set<String>? focusAreas,
     bool? hasInjury,
     String? injuryDetails,
-    // V3 (Ponto 9 - Cardio)
+    Set<String>? healthConditions,
+    String? healthConditionsOther,
     String? cardioPreference,
     String? cardioType,
     String? cardioOtherDetail,
-    String? cardioScheduleMode,
-    Set<String>? cardioDaysOfWeek,
     int? cardioTimesPerWeek,
-    // NOVO (Tempo de Treino)
+    Map<String, String>? cardioNotificationSchedule,
     String? trainingTime,
-    // V3 (Ponto 11 - Dieta)
     bool? dietHasNoRestrictions,
     String? dietOtherRestriction,
     Set<String>? dietRestrictions,
-    //
     int? mealCount,
+    List<String>? mealNotificationSchedule,
     Set<String>? foodDislikes,
     bool? interestInSupplements,
-    // NOVO (Localização)
     String? userRegion,
+    int? groceryShoppingFrequency,
+    Map<int, String>? groceryNotificationSchedule,
     String? phoneNumber,
     String? selectedPlan,
+    bool? notificationsEnabled,
   }) {
     return OnboardingDataModel(
       name: name ?? this.name,
       termsAccepted: termsAccepted ?? this.termsAccepted,
-      healthDataAccepted: healthDataAccepted ?? this.healthDataAccepted, // V3
+      healthDataAccepted: healthDataAccepted ?? this.healthDataAccepted,
       age: age ?? this.age,
       height: height ?? this.height,
       currentWeight: currentWeight ?? this.currentWeight,
@@ -170,41 +155,43 @@ class OnboardingDataModel {
       objective: objective ?? this.objective,
       targetWeight: targetWeight ?? this.targetWeight,
       experienceLevel: experienceLevel ?? this.experienceLevel,
-      // V3 (Ponto 6 - Agenda)
-      scheduleMode: scheduleMode ?? this.scheduleMode,
-      scheduleDaysOfWeek: scheduleDaysOfWeek ?? this.scheduleDaysOfWeek,
       scheduleTimesPerWeek: scheduleTimesPerWeek ?? this.scheduleTimesPerWeek,
-      //
+      trainingNotificationSchedule:
+          trainingNotificationSchedule ?? this.trainingNotificationSchedule,
       equipmentLocation: equipmentLocation ?? this.equipmentLocation,
       homeEquipment: homeEquipment ?? this.homeEquipment,
       otherEquipment: otherEquipment ?? this.otherEquipment,
       focusAreas: focusAreas ?? this.focusAreas,
       hasInjury: hasInjury ?? this.hasInjury,
       injuryDetails: injuryDetails ?? this.injuryDetails,
-      // V3 (Ponto 9 - Cardio)
+      healthConditions: healthConditions ?? this.healthConditions,
+      healthConditionsOther:
+          healthConditionsOther ?? this.healthConditionsOther,
       cardioPreference: cardioPreference ?? this.cardioPreference,
       cardioType: cardioType ?? this.cardioType,
       cardioOtherDetail: cardioOtherDetail ?? this.cardioOtherDetail,
-      cardioScheduleMode: cardioScheduleMode ?? this.cardioScheduleMode,
-      cardioDaysOfWeek: cardioDaysOfWeek ?? this.cardioDaysOfWeek,
       cardioTimesPerWeek: cardioTimesPerWeek ?? this.cardioTimesPerWeek,
-      // NOVO (Tempo de Treino)
+      cardioNotificationSchedule:
+          cardioNotificationSchedule ?? this.cardioNotificationSchedule,
       trainingTime: trainingTime ?? this.trainingTime,
-      // V3 (Ponto 11 - Dieta)
       dietHasNoRestrictions:
           dietHasNoRestrictions ?? this.dietHasNoRestrictions,
       dietOtherRestriction: dietOtherRestriction ?? this.dietOtherRestriction,
       dietRestrictions: dietRestrictions ?? this.dietRestrictions,
-      //
       mealCount: mealCount ?? this.mealCount,
+      mealNotificationSchedule:
+          mealNotificationSchedule ?? this.mealNotificationSchedule,
       foodDislikes: foodDislikes ?? this.foodDislikes,
       interestInSupplements:
           interestInSupplements ?? this.interestInSupplements,
-      // NOVO (Localização)
       userRegion: userRegion ?? this.userRegion,
-      // M2.4
+      groceryShoppingFrequency:
+          groceryShoppingFrequency ?? this.groceryShoppingFrequency,
+      groceryNotificationSchedule:
+          groceryNotificationSchedule ?? this.groceryNotificationSchedule,
       phoneNumber: phoneNumber ?? this.phoneNumber,
       selectedPlan: selectedPlan ?? this.selectedPlan,
+      notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
     );
   }
 }

@@ -2,8 +2,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../application/onboarding_provider.dart';
-import 'vital_data_screen.dart'; // O próximo passo
-import '../../../../core/services/haptic_service.dart'; // V3: Haptics
+import 'vital_data_screen.dart'; // Próxima tela
+import '../../../../core/services/haptic_service.dart'; // Haptics
 
 class ReceptionMessageScreen extends StatefulWidget {
   const ReceptionMessageScreen({super.key});
@@ -14,81 +14,133 @@ class ReceptionMessageScreen extends StatefulWidget {
 
 class _ReceptionMessageScreenState extends State<ReceptionMessageScreen>
     with TickerProviderStateMixin {
-  final List<String> _pitchMessages = [];
-  final List<String> _displayedMessages = [];
-  bool _showContinueButton = false;
-  int _currentMessageIndex = 0;
+  // As frases do roteiro
+  late final List<String> _script;
 
-  late AnimationController _textController;
-  late Animation<int> _textAnimation;
+  // Estado da animação
+  int _currentPhraseIndex = 0;
+  String _displayedText = "";
+  bool _isTyping = false;
+  bool _showButton = false;
+
+  // Controladores
+  late AnimationController _cursorController;
+  Timer? _typingTimer;
+
+  // Configurações de tempo
+  final Duration _typingSpeed =
+      const Duration(milliseconds: 40); // Velocidade da digitação
+  final Duration _readPause =
+      const Duration(seconds: 2); // Tempo para ler antes de trocar
+  final Duration _fadeDuration =
+      const Duration(milliseconds: 500); // Tempo de fade out/in
+
+  // Controle de Opacidade para transição suave entre frases
+  double _textOpacity = 1.0;
 
   @override
   void initState() {
     super.initState();
 
-    // Pega o nome do provider
+    // Pega o nome do usuário para personalizar a primeira frase
     final String userName =
-        context.read<OnboardingProvider>().data.name ?? "Usuário";
+        context.read<OnboardingProvider>().data.name ?? "Viajante";
 
-    // V3 (NOVO PITCH): Mais curto, mais rápido, mais forte.
-    _pitchMessages.addAll([
-      "E aí, $userName. Sou eu, o Procs AI.",
-      "Vamos ser diretos: você não precisa de mim pra ter um 'plano de treino'. O ChatGPT faz isso de graça.",
-      "O meu trabalho é outro.\nEu sou um **sistema de execução**.",
-      "Vamos transformar isso num jogo. Você vai ganhar XP, competir em 'Temporadas' e ganhar **prêmios reais** (whey, creatina, roupas).",
-      "Vou te acompanhar, enviar notificações inteligentes e ajustar seu plano em tempo real.",
-      "Minha única missão é fazer você **não quebrar a corrente**."
-    ]);
+    // Define o roteiro final
+    _script = [
+      "Fala, $userName. Eu sou o Procs AI.",
+      "E desde já, deixa eu te contar: eu não sou uma IA comum como ChatGPT ou Gemini.",
+      "Eles entregam informação.\n\nEu entrego transformação — física e mental.",
+      "Aqui não existe plano parado.\n\nExiste um sistema vivo que cresce com você, te guia e te empurra quando você pensa em parar.",
+      "Se você quer só uma ficha, qualquer IA resolve.\n\nMas se você quer escrever uma nova história, você começa comigo.",
+      "Pronto pra dar o primeiro passo?",
+    ];
 
-    // Preenche a lista de exibição com strings vazias
-    _displayedMessages.addAll(List.filled(_pitchMessages.length, ""));
-
-    _textController = AnimationController(
+    // Animação do cursor piscando
+    _cursorController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1500), // Duração da digitação
-    );
+      duration: const Duration(milliseconds: 500),
+    )..repeat(reverse: true);
 
-    // Inicia a sequência de animação
-    _startNextMessageAnimation();
+    // Inicia a sequência após um breve delay inicial
+    Future.delayed(const Duration(seconds: 1), _startTypingPhrase);
   }
 
   @override
   void dispose() {
-    _textController.dispose();
+    _cursorController.dispose();
+    _typingTimer?.cancel();
     super.dispose();
   }
 
-  /// V3 (NOVO): Inicia a animação de digitação para a próxima mensagem
-  void _startNextMessageAnimation() {
-    if (_currentMessageIndex >= _pitchMessages.length) {
-      // Todas as mensagens foram exibidas
-      setState(() => _showContinueButton = true);
-      HapticService.lightImpact();
+  /// Inicia a digitação da frase atual
+  void _startTypingPhrase() {
+    if (_currentPhraseIndex >= _script.length) {
+      // Fim do roteiro -> Mostra botão
+      setState(() {
+        _showButton = true;
+        _isTyping = false;
+      });
+      HapticService.heavyImpact(); // Impacto final
       return;
     }
 
-    final String message = _pitchMessages[_currentMessageIndex];
-    _textAnimation = IntTween(begin: 0, end: message.length).animate(
-      CurvedAnimation(parent: _textController, curve: Curves.linear),
-    )..addListener(() {
-        setState(() {
-          _displayedMessages[_currentMessageIndex] =
-              message.substring(0, _textAnimation.value);
-        });
-      });
+    setState(() {
+      _isTyping = true;
+      _displayedText = "";
+      _textOpacity = 1.0; // Garante que está visível
+    });
 
-    _textController.reset();
-    _textController.forward().whenComplete(() {
-      // Mensagem concluída
-      HapticService.lightImpact();
-      _currentMessageIndex++;
-      // Pequena pausa antes da próxima mensagem
-      Future.delayed(
-          const Duration(milliseconds: 500), _startNextMessageAnimation);
+    final String fullText = _script[_currentPhraseIndex];
+    int charIndex = 0;
+
+    _typingTimer = Timer.periodic(_typingSpeed, (timer) {
+      if (charIndex < fullText.length) {
+        setState(() {
+          _displayedText += fullText[charIndex];
+        });
+        charIndex++;
+
+        // Haptics: Vibra em intervalos para não saturar
+        if (charIndex % 3 == 0 || ".,!?".contains(fullText[charIndex - 1])) {
+          HapticService.lightImpact();
+        }
+      } else {
+        // Frase terminada
+        timer.cancel();
+        setState(() => _isTyping = false);
+
+        // Se for a última frase, não apaga, apenas mostra o botão
+        if (_currentPhraseIndex == _script.length - 1) {
+          Future.delayed(const Duration(milliseconds: 500), () {
+            setState(() => _showButton = true);
+            HapticService.heavyImpact();
+          });
+        } else {
+          // Aguarda leitura e então troca
+          Future.delayed(_readPause, _fadeOutAndNext);
+        }
+      }
     });
   }
 
-  /// V3 (NOVO): Ação do botão "Continuar"
+  /// Faz o texto desaparecer e inicia a próxima frase
+  void _fadeOutAndNext() {
+    setState(() {
+      _textOpacity = 0.0; // Inicia o Fade Out
+    });
+
+    // Aguarda o tempo do fade out terminar para trocar o índice e reiniciar
+    Future.delayed(_fadeDuration, () {
+      if (mounted) {
+        setState(() {
+          _currentPhraseIndex++;
+        });
+        _startTypingPhrase(); // Recomeça o ciclo para a próxima frase
+      }
+    });
+  }
+
   void _onNext() {
     HapticService.mediumImpact();
     Navigator.of(context).push(
@@ -102,185 +154,93 @@ class _ReceptionMessageScreenState extends State<ReceptionMessageScreen>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
+    // Estilo do Texto Principal
+    final TextStyle messageStyle = theme.textTheme.headlineSmall!.copyWith(
+      height: 1.4,
+      fontWeight: FontWeight.w500,
+      color: theme.colorScheme.onSurface,
+    );
+
     return Scaffold(
-      // V3 (NOVO): Fundo preto puro para imersão total
-      backgroundColor: Colors.black,
-      body: Stack(
-        children: [
-          SafeArea(
-            child: Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 24.0, vertical: 40.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // V3 (NOVO): Avatar da IA com pulso
-                  const _AiAvatar(),
-                  const SizedBox(height: 32),
+      backgroundColor: Colors.black, // Fundo preto imersivo
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 32.0),
+          child: Column(
+            mainAxisAlignment:
+                MainAxisAlignment.center, // Centraliza verticalmente
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Espaço flexível superior
+              const Spacer(flex: 2),
 
-                  // V3 (NOVO): Área de texto com animação
-                  Expanded(
-                    child: ListView.builder(
-                      itemCount: _displayedMessages.length,
-                      itemBuilder: (context, index) {
-                        // Não mostra a caixa até que a animação comece
-                        if (_displayedMessages[index].isEmpty &&
-                            index > _currentMessageIndex) {
-                          return const SizedBox.shrink();
-                        }
-                        return _buildAnimatedText(
-                          theme,
-                          _displayedMessages[index],
-                        );
-                      },
-                    ),
-                  ),
-
-                  // V3 (NOVO): Botão "Continuar" animado
-                  AnimatedOpacity(
-                    opacity: _showContinueButton ? 1.0 : 0.0,
-                    duration: const Duration(milliseconds: 500),
-                    child: IgnorePointer(
-                      ignoring: !_showContinueButton,
-                      child: ElevatedButton(
-                        onPressed: _onNext,
-                        child: const Text("Vamos começar"),
+              // O TEXTO ANIMADO
+              AnimatedOpacity(
+                opacity: _textOpacity,
+                duration: _fadeDuration,
+                child: SizedBox(
+                  height: 200, // Altura fixa para evitar pulos
+                  child: Center(
+                    child: RichText(
+                      textAlign: TextAlign.center,
+                      text: TextSpan(
+                        children: [
+                          TextSpan(
+                            text: _displayedText,
+                            style: messageStyle,
+                          ),
+                          // CORREÇÃO DO BUG DO MARGIN NEGATIVO
+                          if (_isTyping && _textOpacity > 0)
+                            WidgetSpan(
+                              alignment: PlaceholderAlignment.middle,
+                              child: Transform.translate(
+                                offset: const Offset(
+                                    2, 0), // Ajuste de posição seguro
+                                child: FadeTransition(
+                                  opacity: _cursorController,
+                                  child: Container(
+                                    width: 2,
+                                    height: 24,
+                                    color: theme
+                                        .colorScheme.primary, // Cursor Dourado
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
                     ),
                   ),
-                ],
+                ),
               ),
-            ),
-          ),
-          // V3 (NOVO): Botão de voltar flutuante
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: BackButton(
-                  color: theme.colorScheme.onSurface.withOpacity(0.7)),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
-  /// V3 (NOVO): Helper para construir o texto animado
-  Widget _buildAnimatedText(ThemeData theme, String text) {
-    // Lógica para o Markdown simples (**bold**)
-    final parts = text.split('**');
-    List<TextSpan> textSpans = [];
+              const Spacer(flex: 2),
 
-    for (int i = 0; i < parts.length; i++) {
-      final bool isBold = i % 2 == 1;
-      textSpans.add(
-        TextSpan(
-            text: parts[i],
-            style: (isBold
-                    ? theme.textTheme.headlineSmall
-                    : theme.textTheme.headlineSmall
-                        ?.copyWith(fontWeight: FontWeight.w400))
-                ?.copyWith(
-              // V3: Texto da IA tem um leve brilho dourado para ser premium
-              color: isBold
-                  ? theme.colorScheme.primary
-                  : theme.colorScheme.onSurface,
-              shadows: isBold
-                  ? [
-                      Shadow(
-                        color: theme.colorScheme.primary.withOpacity(0.5),
-                        blurRadius: 10,
-                      )
-                    ]
-                  : [],
-            )),
-      );
-    }
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 24.0),
-      child: RichText(
-        text: TextSpan(
-          children: textSpans,
-        ),
-      ),
-    );
-  }
-}
-
-/// V3 (NOVO): Avatar da IA com animação de pulso
-class _AiAvatar extends StatefulWidget {
-  const _AiAvatar();
-
-  @override
-  State<_AiAvatar> createState() => _AiAvatarState();
-}
-
-class _AiAvatarState extends State<_AiAvatar>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _scaleAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 2),
-    )..repeat(reverse: true);
-
-    _scaleAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return ScaleTransition(
-      scale: _scaleAnimation,
-      child: Container(
-        width: 60,
-        height: 60,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          // V3: Gradiente Dourado Premium
-          gradient: LinearGradient(
-            colors: [
-              theme.colorScheme.primary.withOpacity(0.7),
-              theme.colorScheme.primary,
+              // BOTÃO "COMEÇAR EVOLUÇÃO"
+              AnimatedOpacity(
+                opacity: _showButton ? 1.0 : 0.0,
+                duration: const Duration(milliseconds: 800),
+                child: IgnorePointer(
+                  ignoring: !_showButton,
+                  child: Padding(
+                    padding: const EdgeInsets.only(bottom: 40.0),
+                    // CORREÇÃO DO BOTÃO:
+                    // Removida estilização customizada para usar o padrão do AppTheme
+                    // (Fundo Branco, Texto Preto, Largura Total)
+                    child: ElevatedButton(
+                      onPressed: _onNext,
+                      child: const Text(
+                        "COMEÇAR EVOLUÇÃO",
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.0,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
             ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: theme.colorScheme.primary.withOpacity(0.3),
-              blurRadius: 15,
-              spreadRadius: 2,
-            ),
-          ],
-        ),
-        child: Center(
-          // V3: Círculo interno preto para criar a borda
-          child: Container(
-            width: 52,
-            height: 52,
-            decoration: const BoxDecoration(
-              shape: BoxShape.circle,
-              color: Colors.black,
-            ),
-            child: Icon(
-              Icons.bolt, // Ícone da IA
-              color: theme.colorScheme.primary,
-              size: 30,
-            ),
           ),
         ),
       ),
