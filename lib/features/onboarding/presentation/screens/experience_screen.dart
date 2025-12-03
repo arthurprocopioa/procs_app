@@ -59,34 +59,22 @@ class _ExperienceScreenState extends State<ExperienceScreen> {
     // V3: O estado vem do Provider
     final provider = context.watch<OnboardingProvider>();
     final selectedExperience = provider.data.experienceLevel;
-    final bool canContinue = selectedExperience != null;
 
     return Scaffold(
       // 1. AppBar removido
       appBar: null,
 
-      // 2. Botão de Continuação fixado no rodapé
-      bottomNavigationBar: Padding(
-        padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
-        child: ElevatedButton(
-          onPressed:
-              canContinue ? () => _onNext(context, selectedExperience!) : null,
-          child: const Text('Continuar'),
-        ),
-      ),
-
       body: SafeArea(
         child: Column(
           children: [
             // BARRA DE PROGRESSO E BOTÃO DE VOLTAR (Passo 4/13)
-            Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
               child: Row(
                 children: [
-                  const ProcsBackButton(),
-                  const SizedBox(width: 16),
-                  const Expanded(
+                  ProcsBackButton(),
+                  SizedBox(width: 16),
+                  Expanded(
                     // Usa a barra premium
                     child: PremiumProgressBar(progress: 4 / 16),
                   ),
@@ -124,7 +112,7 @@ class _ExperienceScreenState extends State<ExperienceScreen> {
                           context
                               .read<OnboardingProvider>()
                               .setExperienceLevel(key);
-                          HapticService.lightImpact();
+                          _onNext(context, key);
                         },
                       );
                     }).expand((widget) => [widget, const SizedBox(height: 16)]),

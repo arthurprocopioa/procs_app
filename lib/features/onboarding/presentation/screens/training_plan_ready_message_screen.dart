@@ -1,68 +1,54 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../../application/onboarding_provider.dart';
-import 'vital_data_screen.dart'; // Próxima tela
-import '../../../../core/services/haptic_service.dart'; // Haptics
+// import 'package:flutter/services.dart'; // Removed unused import
+// import 'package:provider/provider.dart';
+// import '../../application/onboarding_provider.dart';
+import 'diet_restrictions_screen.dart'; // Próxima tela
+import '../../../../core/services/haptic_service.dart';
 
-class ReceptionMessageScreen extends StatefulWidget {
-  const ReceptionMessageScreen({super.key});
+class TrainingPlanReadyMessageScreen extends StatefulWidget {
+  const TrainingPlanReadyMessageScreen({super.key});
 
   @override
-  State<ReceptionMessageScreen> createState() => _ReceptionMessageScreenState();
+  State<TrainingPlanReadyMessageScreen> createState() =>
+      _TrainingPlanReadyMessageScreenState();
 }
 
-class _ReceptionMessageScreenState extends State<ReceptionMessageScreen>
+class _TrainingPlanReadyMessageScreenState
+    extends State<TrainingPlanReadyMessageScreen>
     with TickerProviderStateMixin {
-  // As frases do roteiro
   late final List<String> _script;
 
-  // Estado da animação
   int _currentPhraseIndex = 0;
   String _displayedText = "";
   bool _isTyping = false;
   bool _showButton = false;
 
-  // Controladores
   late AnimationController _cursorController;
   Timer? _typingTimer;
 
-  // Configurações de tempo
-  final Duration _typingSpeed =
-      const Duration(milliseconds: 40); // Velocidade da digitação
-  final Duration _readPause =
-      const Duration(seconds: 2); // Tempo para ler antes de trocar
-  final Duration _fadeDuration =
-      const Duration(milliseconds: 500); // Tempo de fade out/in
+  final Duration _typingSpeed = const Duration(milliseconds: 40);
+  final Duration _readPause = const Duration(seconds: 2);
+  final Duration _fadeDuration = const Duration(milliseconds: 500);
 
-  // Controle de Opacidade para transição suave entre frases
   double _textOpacity = 1.0;
 
   @override
   void initState() {
     super.initState();
 
-    // Pega o nome do usuário para personalizar a primeira frase
-    final String userName =
-        context.read<OnboardingProvider>().data.name ?? "Viajante";
-
-    // Define o roteiro final
     _script = [
-      "Fala, $userName. Eu sou o Procs AI.",
-      "E desde já, deixa eu te contar: eu não sou uma IA comum como ChatGPT ou Gemini.",
-      "Eles entregam informação.\n\nEu entrego transformação — física e mental.",
-      "Aqui não existe plano parado.\n\nExiste um sistema vivo que cresce com você, te guia e te empurra quando você pensa em parar.",
-      "Se você quer só uma ficha, qualquer IA resolve.\n\nMas se você quer escrever uma nova história, você começa comigo.",
-      "Pronto pra dar o primeiro passo?",
+      "Plano de treino finalizado.",
+      "Obrigado por confiar no processo até aqui.",
+      "Agora, faltam apenas algumas perguntas sobre sua alimentação.",
+      "Assim que terminarmos, seu plano completo estará pronto.",
     ];
 
-    // Animação do cursor piscando
     _cursorController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 500),
     )..repeat(reverse: true);
 
-    // Inicia a sequência após um breve delay inicial
     Future.delayed(const Duration(seconds: 1), _startTypingPhrase);
   }
 
@@ -73,22 +59,20 @@ class _ReceptionMessageScreenState extends State<ReceptionMessageScreen>
     super.dispose();
   }
 
-  /// Inicia a digitação da frase atual
   void _startTypingPhrase() {
     if (_currentPhraseIndex >= _script.length) {
-      // Fim do roteiro -> Mostra botão
       setState(() {
         _showButton = true;
         _isTyping = false;
       });
-      HapticService.heavyImpact(); // Impacto final
+      HapticService.heavyImpact();
       return;
     }
 
     setState(() {
       _isTyping = true;
       _displayedText = "";
-      _textOpacity = 1.0; // Garante que está visível
+      _textOpacity = 1.0;
     });
 
     final String fullText = _script[_currentPhraseIndex];
@@ -101,42 +85,36 @@ class _ReceptionMessageScreenState extends State<ReceptionMessageScreen>
         });
         charIndex++;
 
-        // Haptics: Vibra em intervalos para não saturar
         if (charIndex % 3 == 0 || ".,!?".contains(fullText[charIndex - 1])) {
           HapticService.lightImpact();
         }
       } else {
-        // Frase terminada
         timer.cancel();
         setState(() => _isTyping = false);
 
-        // Se for a última frase, não apaga, apenas mostra o botão
         if (_currentPhraseIndex == _script.length - 1) {
           Future.delayed(const Duration(milliseconds: 500), () {
             setState(() => _showButton = true);
             HapticService.heavyImpact();
           });
         } else {
-          // Aguarda leitura e então troca
           Future.delayed(_readPause, _fadeOutAndNext);
         }
       }
     });
   }
 
-  /// Faz o texto desaparecer e inicia a próxima frase
   void _fadeOutAndNext() {
     setState(() {
-      _textOpacity = 0.0; // Inicia o Fade Out
+      _textOpacity = 0.0;
     });
 
-    // Aguarda o tempo do fade out terminar para trocar o índice e reiniciar
     Future.delayed(_fadeDuration, () {
       if (mounted) {
         setState(() {
           _currentPhraseIndex++;
         });
-        _startTypingPhrase(); // Recomeça o ciclo para a próxima frase
+        _startTypingPhrase();
       }
     });
   }
@@ -145,7 +123,7 @@ class _ReceptionMessageScreenState extends State<ReceptionMessageScreen>
     HapticService.mediumImpact();
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => const VitalDataScreen(),
+        builder: (context) => const DietRestrictionsScreen(),
       ),
     );
   }
@@ -154,7 +132,6 @@ class _ReceptionMessageScreenState extends State<ReceptionMessageScreen>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    // Estilo do Texto Principal
     final TextStyle messageStyle = theme.textTheme.headlineSmall!.copyWith(
       height: 1.4,
       fontWeight: FontWeight.w500,
@@ -162,38 +139,31 @@ class _ReceptionMessageScreenState extends State<ReceptionMessageScreen>
     );
 
     return Scaffold(
-      backgroundColor: Colors.black, // Fundo preto imersivo
+      backgroundColor: Colors.black,
       body: Stack(
         children: [
-          // BACKGROUND IMAGE
           Container(
             decoration: const BoxDecoration(
               image: DecorationImage(
                 image: AssetImage('assets/images/background_premium.png'),
                 fit: BoxFit.cover,
-                opacity: 0.6, // Ajuste de opacidade para legibilidade
+                opacity: 0.6,
               ),
             ),
           ),
-
-          // CONTENT
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 32.0),
               child: Column(
-                mainAxisAlignment:
-                    MainAxisAlignment.center, // Centraliza verticalmente
+                mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Espaço flexível superior
                   const Spacer(flex: 2),
-
-                  // O TEXTO ANIMADO
                   AnimatedOpacity(
                     opacity: _textOpacity,
                     duration: _fadeDuration,
                     child: SizedBox(
-                      height: 200, // Altura fixa para evitar pulos
+                      height: 200,
                       child: Center(
                         child: RichText(
                           textAlign: TextAlign.center,
@@ -203,20 +173,17 @@ class _ReceptionMessageScreenState extends State<ReceptionMessageScreen>
                                 text: _displayedText,
                                 style: messageStyle,
                               ),
-                              // CORREÇÃO DO BUG DO MARGIN NEGATIVO
                               if (_isTyping && _textOpacity > 0)
                                 WidgetSpan(
                                   alignment: PlaceholderAlignment.middle,
                                   child: Transform.translate(
-                                    offset: const Offset(
-                                        2, 0), // Ajuste de posição seguro
+                                    offset: const Offset(2, 0),
                                     child: FadeTransition(
                                       opacity: _cursorController,
                                       child: Container(
                                         width: 2,
                                         height: 24,
-                                        color: theme.colorScheme
-                                            .primary, // Cursor Dourado
+                                        color: theme.colorScheme.primary,
                                       ),
                                     ),
                                   ),
@@ -227,10 +194,7 @@ class _ReceptionMessageScreenState extends State<ReceptionMessageScreen>
                       ),
                     ),
                   ),
-
                   const Spacer(flex: 2),
-
-                  // BOTÃO "COMEÇAR EVOLUÇÃO"
                   AnimatedOpacity(
                     opacity: _showButton ? 1.0 : 0.0,
                     duration: const Duration(milliseconds: 800),
@@ -238,13 +202,10 @@ class _ReceptionMessageScreenState extends State<ReceptionMessageScreen>
                       ignoring: !_showButton,
                       child: Padding(
                         padding: const EdgeInsets.only(bottom: 40.0),
-                        // CORREÇÃO DO BOTÃO:
-                        // Removida estilização customizada para usar o padrão do AppTheme
-                        // (Fundo Branco, Texto Preto, Largura Total)
                         child: ElevatedButton(
                           onPressed: _onNext,
                           child: const Text(
-                            "COMEÇAR EVOLUÇÃO",
+                            "CONTINUAR",
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               letterSpacing: 1.0,

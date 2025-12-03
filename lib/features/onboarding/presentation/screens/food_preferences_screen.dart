@@ -9,6 +9,7 @@ import '../../../../core/services/haptic_service.dart';
 import '../../application/onboarding_provider.dart';
 // V3 (NOVOS IMPORTS): Widgets reutilizáveis
 import '../widgets/premium_progress_bar.dart';
+import '../widgets/premium_selection_card.dart';
 import '../widgets/procs_back_button.dart';
 
 /// Tela 1.16: O usuário informa o que NÃO gosta de comer (Passo 14/15).
@@ -59,6 +60,17 @@ class _FoodPreferencesScreenState extends State<FoodPreferencesScreen> {
       _dislikedFoods.remove(otherFood);
     }
 
+    // Se não tem nada selecionado e nem texto, assumimos que não marcou nada ainda
+    // (ou poderíamos assumir que come de tudo se já tivesse passado por aqui,
+    // mas para forçar a escolha, deixamos false).
+    // Se quiser persistir o "como de tudo", precisaríamos de um flag no provider.
+    // Por enquanto, vamos inferir: se a lista está vazia mas o usuário já tinha avançado...
+    // Na verdade, melhor deixar o usuário escolher explicitamente.
+
+    _otherController.addListener(() {
+      setState(() {}); // Atualiza para habilitar/desabilitar botão
+    });
+
     // V3: Analytics
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<AnalyticsService>(context, listen: false)
@@ -73,11 +85,9 @@ class _FoodPreferencesScreenState extends State<FoodPreferencesScreen> {
     super.dispose();
   }
 
-  /// V3: Ação de 'Próximo'
+  /// V3: Ação de 'Próximo' (Continuar com restrições)
   void _onNext() {
-    // V3: Haptics
     HapticService.mediumImpact();
-    // CORREÇÃO DO BUG: Fecha o teclado com segurança
     FocusScope.of(context).unfocus();
 
     // Adiciona o texto de "Outros" ao Set final
@@ -89,19 +99,42 @@ class _FoodPreferencesScreenState extends State<FoodPreferencesScreen> {
     final provider = context.read<OnboardingProvider>();
     provider.setFoodDislikes(_dislikedFoods);
 
-    // V3: Analytics
     context.read<AnalyticsService>().trackEvent(
       'onboarding_food_dislikes_set',
       parameters: {
         'dislikes_count': _dislikedFoods.length,
         'has_other': otherText.isNotEmpty,
+        'eats_everything': false,
       },
     );
 
-    // V3: Navegação para a última tela de Dieta (Suplementos)
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => const SupplementsScreen(), // Navega para 15/15
+        builder: (context) => const SupplementsScreen(),
+      ),
+    );
+  }
+
+  /// Ação de 'Como de tudo' (Sem restrições)
+  void _onEatsEverything() {
+    HapticService.mediumImpact();
+    FocusScope.of(context).unfocus();
+
+    final provider = context.read<OnboardingProvider>();
+    provider.setEatsEverything();
+
+    context.read<AnalyticsService>().trackEvent(
+      'onboarding_food_dislikes_set',
+      parameters: {
+        'dislikes_count': 0,
+        'has_other': false,
+        'eats_everything': true,
+      },
+    );
+
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => const SupplementsScreen(),
       ),
     );
   }
@@ -123,17 +156,34 @@ class _FoodPreferencesScreenState extends State<FoodPreferencesScreen> {
     final theme = Theme.of(context);
     final textTheme = theme.textTheme;
 
-    return Scaffold(
-      // 1. AppBar removido
-      appBar: null,
+    // Validação: Continuar só habilita se tiver algo selecionado ou escrito
+    final bool canContinue =
+        _dislikedFoods.isNotEmpty || _otherController.text.trim().isNotEmpty;
 
-      // 2. Botão de Continuação fixado no rodapé (Resolve Bug 3a)
+    return Scaffold(
+      appBar: null,
       bottomNavigationBar: Padding(
         padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
-        child: ElevatedButton(
-          // Tela opcional, botão sempre ativo
-          onPressed: _onNext,
-          child: const Text('Continuar'),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Botão "Como de tudo" (Estilo similar ao Continuar)
+            ElevatedButton(
+              onPressed: _onEatsEverything,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: theme.colorScheme.surfaceContainerHighest,
+                foregroundColor: theme.colorScheme.onSurface,
+              ),
+              child: const Text('Como de tudo (Sem restrições)'),
+            ),
+            const SizedBox(height: 12),
+            // Botão Continuar
+            ElevatedButton(
+              onPressed: canContinue ? _onNext : null,
+              child: const Text('Continuar'),
+            ),
+          ],
         ),
       ),
 
@@ -244,20 +294,20 @@ class _FoodPreferencesScreenState extends State<FoodPreferencesScreen> {
       showCheckmark: false, // Remove o ícone de "check"
       backgroundColor: theme.cardTheme.color,
       selectedColor:
-          colorScheme.primary.withOpacity(0.1), // Fundo dourado sutil
+          colorScheme.primary.withValues(alpha: 0.1), // Fundo dourado sutil
 
       labelStyle: theme.textTheme.bodyMedium?.copyWith(
         fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
         color: isSelected
             ? colorScheme.primary // Texto dourado
-            : colorScheme.onSurface.withOpacity(0.8),
+            : colorScheme.onSurface.withValues(alpha: 0.8),
       ),
 
       shape: StadiumBorder(
         side: BorderSide(
           color: isSelected
               ? colorScheme.primary // Borda dourada
-              : colorScheme.surfaceContainer.withOpacity(0.5),
+              : colorScheme.surfaceContainer.withValues(alpha: 0.5),
           width: isSelected ? 2.0 : 1.0,
         ),
       ),

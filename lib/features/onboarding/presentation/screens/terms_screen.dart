@@ -1,6 +1,6 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+// import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
@@ -51,7 +51,7 @@ class _TermsScreenState extends State<TermsScreen> {
                 width: 48,
                 height: 5,
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.onSurface.withOpacity(0.3),
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
                   borderRadius: BorderRadius.circular(10),
                 ),
               ),
@@ -65,7 +65,7 @@ class _TermsScreenState extends State<TermsScreen> {
                   child: Text(
                     content * 3, // Conteúdo placeholder
                     style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurface.withOpacity(0.8),
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
                       height: 1.5,
                     ),
                   ),
@@ -164,87 +164,98 @@ class _TermsScreenState extends State<TermsScreen> {
         bottom: null,
       ),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // V3: Ícone grande no estilo Zing
-              Container(
-                width: 120,
-                height: 120,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  // V3: Cor de fundo clara, como no Zing, adaptada ao dark theme
-                  color: theme.colorScheme.surfaceContainer.withOpacity(0.5),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // V3: Ícone grande no estilo Zing
+                    Center(
+                      child: Container(
+                        width: 120,
+                        height: 120,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          // V3: Cor de fundo clara, como no Zing, adaptada ao dark theme
+                          color: theme.colorScheme.surfaceContainerHighest
+                              .withValues(alpha: 0.5),
+                        ),
+                        child: Icon(
+                          FontAwesomeIcons.shieldHalved,
+                          size: 56,
+                          // V3: Ícone mais escuro, como no Zing
+                          color: theme.colorScheme.onSurface,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    // V3: Título centralizado
+                    Text(
+                      "Privacidade total", // V3: Título do Zing
+                      style: textTheme.displayLarge?.copyWith(fontSize: 28),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 32),
+
+                    // V3 (CRÍTICA 1 e 2): A primeira opção (Zing)
+                    Consumer<OnboardingProvider>(
+                      builder: (context, provider, child) {
+                        return _buildTermRow(
+                          context: context,
+                          theme: theme,
+                          text:
+                              "Concordo com o processamento dos meus dados de saúde para permitir que o Procs AI funcione corretamente.",
+                          isAccepted: _healthDataAccepted,
+                          onToggle: (value) {
+                            HapticService.lightImpact();
+                            setState(() {
+                              _healthDataAccepted = value;
+                            });
+                          },
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 16),
+
+                    // V3 (CRÍTICA 1 e 2): A segunda opção (Zing)
+                    Consumer<OnboardingProvider>(
+                      builder: (context, provider, child) {
+                        final bool policyAccepted = provider.data.termsAccepted;
+                        return _buildTermRow(
+                          context: context,
+                          theme: theme,
+                          // V3: Usa o RichText com os links
+                          richText: _buildTermsText(context, theme),
+                          isAccepted: policyAccepted,
+                          onToggle: (value) {
+                            HapticService.lightImpact();
+                            provider.setTermsAccepted(value);
+                          },
+                        );
+                      },
+                    ),
+
+                    const SizedBox(height: 16),
+                    // V3: Texto de ajuda do Zing
+                    Text(
+                      "Para retirar seu consentimento, por favor entre em contato com o suporte.",
+                      style: textTheme.bodyMedium?.copyWith(
+                          color: textTheme.bodyMedium?.color
+                              ?.withValues(alpha: 0.7)),
+                      textAlign: TextAlign.start,
+                    ),
+                  ],
                 ),
-                child: Icon(
-                  FontAwesomeIcons.shieldHalved,
-                  size: 56,
-                  // V3: Ícone mais escuro, como no Zing
-                  color: theme.colorScheme.onSurface,
-                ),
               ),
-              const SizedBox(height: 24),
-              // V3: Título centralizado
-              Text(
-                "Privacidade total", // V3: Título do Zing
-                style: textTheme.displayLarge?.copyWith(fontSize: 28),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 32),
-
-              // V3 (CRÍTICA 1 e 2): A primeira opção (Zing)
-              Consumer<OnboardingProvider>(
-                builder: (context, provider, child) {
-                  return _buildTermRow(
-                    context: context,
-                    theme: theme,
-                    text:
-                        "Concordo com o processamento dos meus dados de saúde para permitir que o Procs AI funcione corretamente.",
-                    isAccepted: _healthDataAccepted,
-                    onToggle: (value) {
-                      HapticService.lightImpact();
-                      setState(() {
-                        _healthDataAccepted = value;
-                      });
-                    },
-                  );
-                },
-              ),
-              const SizedBox(height: 16),
-
-              // V3 (CRÍTICA 1 e 2): A segunda opção (Zing)
-              Consumer<OnboardingProvider>(
-                builder: (context, provider, child) {
-                  final bool policyAccepted = provider.data.termsAccepted;
-                  return _buildTermRow(
-                    context: context,
-                    theme: theme,
-                    // V3: Usa o RichText com os links
-                    richText: _buildTermsText(context, theme),
-                    isAccepted: policyAccepted,
-                    onToggle: (value) {
-                      HapticService.lightImpact();
-                      provider.setTermsAccepted(value);
-                    },
-                  );
-                },
-              ),
-
-              const SizedBox(height: 16),
-              // V3: Texto de ajuda do Zing
-              Text(
-                "Para retirar seu consentimento, por favor entre em contato com o suporte.",
-                style: textTheme.bodyMedium?.copyWith(
-                    color: textTheme.bodyMedium?.color?.withOpacity(0.7)),
-                textAlign: TextAlign.start,
-              ),
-
-              const Spacer(),
-
-              // V3: Botões do Zing
-              Consumer<OnboardingProvider>(
+            ),
+            // V3: Botões do Zing (Fixos na parte inferior)
+            Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Consumer<OnboardingProvider>(
                 builder: (context, provider, child) {
                   final bool policyAccepted = provider.data.termsAccepted;
                   // V3: Botão "Continuar" só ativa com AMBOS marcados
@@ -276,8 +287,8 @@ class _TermsScreenState extends State<TermsScreen> {
                   );
                 },
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -310,7 +321,7 @@ class _TermsScreenState extends State<TermsScreen> {
                 return theme.colorScheme.primary;
               }
               return theme.colorScheme.onSurface
-                  .withOpacity(0.6); // Cor da borda
+                  .withValues(alpha: 0.6); // Cor da borda
             }),
           ),
           // V3: Texto ao lado
@@ -321,7 +332,7 @@ class _TermsScreenState extends State<TermsScreen> {
                   Text(
                     text ?? '',
                     style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurface.withOpacity(0.7),
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                       height: 1.5,
                     ),
                   ),

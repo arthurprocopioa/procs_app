@@ -62,13 +62,6 @@ class _FocusAreaScreenState extends State<FocusAreaScreen> {
 
     return Scaffold(
       appBar: null,
-      bottomNavigationBar: Padding(
-        padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
-        child: ElevatedButton(
-          onPressed: _onNext,
-          child: const Text('Continuar'),
-        ),
-      ),
       body: SafeArea(
         child: Column(
           children: [
@@ -112,19 +105,29 @@ class _FocusAreaScreenState extends State<FocusAreaScreen> {
                       return Padding(
                         padding: const EdgeInsets.symmetric(vertical: 6.0),
                         child: PremiumSelectionCard(
-                          // <-- AQUI: Uso do widget oficial
                           text: text,
                           isSelected: isSelected,
                           onTap: () {
                             HapticService.lightImpact();
                             provider.toggleFocusArea(key);
+                            // Auto-advance only for Full Body
+                            if (key == 'full_body') {
+                              _onNext();
+                            }
                           },
                         ),
                       );
                     }),
-                    const SizedBox(height: 96),
+                    const SizedBox(height: 24),
                   ],
                 ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: ElevatedButton(
+                onPressed: selectedAreas.isNotEmpty ? _onNext : null,
+                child: const Text("Continuar"),
               ),
             ),
           ],

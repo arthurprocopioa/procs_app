@@ -24,8 +24,6 @@ class _ResultReadyScreenState extends State<ResultReadyScreen>
 
   // Estado para a Checklist (aparece em um momento específico)
   bool _showChecklist = false;
-  // Estado para o Ícone Gigante (aparece no início)
-  bool _showIcon = true;
 
   // Controladores
   late AnimationController _cursorController;
@@ -70,12 +68,8 @@ class _ResultReadyScreenState extends State<ResultReadyScreen>
       duration: const Duration(milliseconds: 500),
     )..repeat(reverse: true);
 
-    // Inicia após a animação do ícone
-    Future.delayed(const Duration(seconds: 2), () {
-      // Faz o ícone sumir suavemente para dar lugar ao texto
-      setState(() => _showIcon = false);
-      Future.delayed(const Duration(milliseconds: 500), _startTypingPhrase);
-    });
+    // Inicia diretamente
+    Future.delayed(const Duration(milliseconds: 500), _startTypingPhrase);
   }
 
   @override
@@ -171,120 +165,115 @@ class _ResultReadyScreenState extends State<ResultReadyScreen>
 
     return Scaffold(
       backgroundColor: Colors.black,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 32.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const Spacer(flex: 2),
-
-              // 1. ÍCONE GIGANTE (Aparece só no início)
-              AnimatedOpacity(
-                opacity: _showIcon ? 1.0 : 0.0,
-                duration: const Duration(milliseconds: 500),
-                child: _showIcon
-                    ? Center(
-                        child: Container(
-                          width: 120,
-                          height: 120,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: theme.colorScheme.primary.withOpacity(0.1),
-                          ),
-                          child: Icon(
-                            Icons.check_circle_rounded,
-                            size: 80,
-                            color: theme.colorScheme.primary,
-                          ),
-                        ),
-                      )
-                    : const SizedBox.shrink(), // Some do layout
+      body: Stack(
+        children: [
+          // BACKGROUND IMAGE
+          Container(
+            decoration: const BoxDecoration(
+              image: DecorationImage(
+                image: AssetImage('assets/images/background_premium.png'),
+                fit: BoxFit.cover,
+                opacity: 0.6, // Ajuste de opacidade para legibilidade
               ),
+            ),
+          ),
 
-              // 2. ÁREA DE TEXTO DIGITADO (Typewriter)
-              if (!_showIcon && !_showChecklist)
-                AnimatedOpacity(
-                  opacity: _textOpacity,
-                  duration: _fadeDuration,
-                  child: SizedBox(
-                    height: 200,
-                    child: Center(
-                      child: RichText(
-                        textAlign: TextAlign.center,
-                        text: TextSpan(
-                          children: [
-                            TextSpan(text: _displayedText, style: messageStyle),
-                            if (_isTyping && _textOpacity > 0)
-                              WidgetSpan(
-                                alignment: PlaceholderAlignment.middle,
-                                child: Transform.translate(
-                                  offset: const Offset(2, 0),
-                                  child: FadeTransition(
-                                    opacity: _cursorController,
-                                    child: Container(
-                                      width: 2,
-                                      height: 24,
-                                      color: theme.colorScheme.primary,
+          // CONTENT
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 32.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const Spacer(flex: 2),
+
+                  // 2. ÁREA DE TEXTO DIGITADO (Typewriter)
+                  if (!_showChecklist)
+                    AnimatedOpacity(
+                      opacity: _textOpacity,
+                      duration: _fadeDuration,
+                      child: SizedBox(
+                        height: 200,
+                        child: Center(
+                          child: RichText(
+                            textAlign: TextAlign.center,
+                            text: TextSpan(
+                              children: [
+                                TextSpan(
+                                    text: _displayedText, style: messageStyle),
+                                if (_isTyping && _textOpacity > 0)
+                                  WidgetSpan(
+                                    alignment: PlaceholderAlignment.middle,
+                                    child: Transform.translate(
+                                      offset: const Offset(2, 0),
+                                      child: FadeTransition(
+                                        opacity: _cursorController,
+                                        child: Container(
+                                          width: 2,
+                                          height: 24,
+                                          color: theme.colorScheme.primary,
+                                        ),
+                                      ),
                                     ),
                                   ),
-                                ),
-                              ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+
+                  // 3. CHECKLIST ANIMADA (Aparece no meio do roteiro)
+                  if (_showChecklist)
+                    AnimatedOpacity(
+                      opacity: _showChecklist ? 1.0 : 0.0,
+                      duration: const Duration(milliseconds: 500),
+                      child: SizedBox(
+                        height: 250, // Altura fixa para a checklist
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            _buildCheckItem(
+                                theme, "Estratégia de Treino: Definida.", 0),
+                            const SizedBox(height: 24),
+                            _buildCheckItem(
+                                theme, "Metas de Nutrição: Calculadas.", 1),
+                            const SizedBox(height: 24),
+                            _buildCheckItem(
+                                theme, "Variações de Exercício: Prontas.", 2),
                           ],
                         ),
                       ),
                     ),
-                  ),
-                ),
 
-              // 3. CHECKLIST ANIMADA (Aparece no meio do roteiro)
-              if (_showChecklist)
-                AnimatedOpacity(
-                  opacity: _showChecklist ? 1.0 : 0.0,
-                  duration: const Duration(milliseconds: 500),
-                  child: SizedBox(
-                    height: 250, // Altura fixa para a checklist
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        _buildCheckItem(
-                            theme, "Estratégia de Treino: Definida.", 0),
-                        const SizedBox(height: 24),
-                        _buildCheckItem(
-                            theme, "Metas de Nutrição: Calculadas.", 1),
-                        const SizedBox(height: 24),
-                        _buildCheckItem(
-                            theme, "Variações de Exercício: Prontas.", 2),
-                      ],
-                    ),
-                  ),
-                ),
+                  const Spacer(flex: 2),
 
-              const Spacer(flex: 2),
-
-              // 4. BOTÃO FINAL
-              AnimatedOpacity(
-                opacity: _showButton ? 1.0 : 0.0,
-                duration: const Duration(milliseconds: 800),
-                child: IgnorePointer(
-                  ignoring: !_showButton,
-                  child: Padding(
-                    padding: const EdgeInsets.only(bottom: 40.0),
-                    child: ElevatedButton(
-                      onPressed: _onNext,
-                      child: const Text(
-                        "VAMOS LÁ",
-                        style: TextStyle(
-                            fontWeight: FontWeight.bold, letterSpacing: 1.0),
+                  // 4. BOTÃO FINAL
+                  AnimatedOpacity(
+                    opacity: _showButton ? 1.0 : 0.0,
+                    duration: const Duration(milliseconds: 800),
+                    child: IgnorePointer(
+                      ignoring: !_showButton,
+                      child: Padding(
+                        padding: const EdgeInsets.only(bottom: 40.0),
+                        child: ElevatedButton(
+                          onPressed: _onNext,
+                          child: const Text(
+                            "VAMOS LÁ",
+                            style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 1.0),
+                          ),
+                        ),
                       ),
                     ),
                   ),
-                ),
+                ],
               ),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -305,20 +294,16 @@ class _ResultReadyScreenState extends State<ResultReadyScreen>
           ),
         );
       },
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center, // Centralizado
-        children: [
-          Icon(Icons.check_circle, color: theme.colorScheme.primary, size: 24),
-          const SizedBox(width: 12),
-          Text(
-            text,
-            style: theme.textTheme.bodyLarge?.copyWith(
-              fontWeight: FontWeight.w500,
-              color: Colors.white,
-              fontSize: 18,
-            ),
+      child: Center(
+        child: Text(
+          text,
+          style: theme.textTheme.bodyLarge?.copyWith(
+            fontWeight: FontWeight.w500,
+            color: Colors.white,
+            fontSize: 18,
           ),
-        ],
+          textAlign: TextAlign.center,
+        ),
       ),
     );
   }

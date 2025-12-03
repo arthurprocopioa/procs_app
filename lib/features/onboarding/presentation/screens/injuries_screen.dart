@@ -33,6 +33,11 @@ class _InjuriesScreenState extends State<InjuriesScreen> {
     _hasInjury = providerData.hasInjury;
     _injuryController = TextEditingController(text: providerData.injuryDetails);
 
+    // Adiciona listener para atualizar o botão quando o texto mudar
+    _injuryController.addListener(() {
+      setState(() {});
+    });
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<AnalyticsService>(context, listen: false)
           .trackScreenView('injuries');
@@ -85,28 +90,26 @@ class _InjuriesScreenState extends State<InjuriesScreen> {
     // Ouve as mudanças do provider
     context.watch<OnboardingProvider>();
 
-    final bool canContinue = _hasInjury != null;
+    // Validação: Se tiver lesão, precisa ter texto. Se não tiver, pode seguir.
+    final bool canContinue = _hasInjury != null &&
+        (!_hasInjury! || _injuryController.text.trim().isNotEmpty);
     final bool showSubSelection = _hasInjury == true;
 
     return Scaffold(
-      // 1. AppBar removido
       appBar: null,
-
-      // 2. Botão de Ação (Inferior Fixo - V3 UI)
-      bottomNavigationBar: Padding(
-        padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
-        child: ElevatedButton(
-          onPressed: canContinue ? _onNext : null,
-          child: const Text('Continuar'),
-        ),
-      ),
-
-      // 3. Body
+      bottomNavigationBar: showSubSelection
+          ? Padding(
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
+              child: ElevatedButton(
+                onPressed: canContinue ? _onNext : null,
+                child: const Text('Continuar'),
+              ),
+            )
+          : null,
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // BARRA DE PROGRESSO E BOTÃO DE VOLTAR (Passo 8/17 - Mantido)
             Padding(
               padding:
                   const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
@@ -115,14 +118,11 @@ class _InjuriesScreenState extends State<InjuriesScreen> {
                   const ProcsBackButton(),
                   const SizedBox(width: 16),
                   const Expanded(
-                    // Barra de progresso (8/17)
-                    child: PremiumProgressBar(progress: 8 / 16),
+                    child: PremiumProgressBar(progress: 8 / 17),
                   ),
                 ],
               ),
             ),
-
-            // CONTEÚDO ROLÁVEL
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(horizontal: 24.0),
@@ -137,74 +137,75 @@ class _InjuriesScreenState extends State<InjuriesScreen> {
                     ),
                     const SizedBox(height: 32),
 
-                    // V3: Card para "Sim"
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 16),
-                      child: PremiumSelectionCard(
-                        text: 'Sim',
-                        isSelected: _hasInjury == true,
-                        onTap: () {
-                          HapticService.lightImpact();
-                          setState(() {
-                            _hasInjury = true;
-                          });
-                          Future.delayed(const Duration(milliseconds: 100), () {
-                            _injuryFocusNode.requestFocus();
-                          });
-                        },
-                      ),
-                    ),
-
-                    // V3: Card para "Não"
+                    // NÍVEL 1: Seleção Principal
                     PremiumSelectionCard(
-                      text: 'Não',
+                      text: 'Não possuo lesões',
                       isSelected: _hasInjury == false,
                       onTap: () {
                         HapticService.lightImpact();
                         setState(() {
                           _hasInjury = false;
+                          _injuryController.clear();
                         });
                         FocusScope.of(context).unfocus();
+                        _onNext(); // Auto-advance
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    PremiumSelectionCard(
+                      text: 'Possuo lesões',
+                      isSelected: _hasInjury == true,
+                      onTap: () {
+                        HapticService.lightImpact();
+                        setState(() {
+                          _hasInjury = true;
+                        });
+                        Future.delayed(const Duration(milliseconds: 100), () {
+                          _injuryFocusNode.requestFocus();
+                        });
                       },
                     ),
 
-                    // V3: Sub-Seleção (Textfield)
-                    AnimatedOpacity(
-                      opacity: showSubSelection ? 1.0 : 0.0,
+                    // NÍVEL 2: Descrição (Condicional)
+                    AnimatedSize(
                       duration: const Duration(milliseconds: 300),
-                      child: Visibility(
-                        visible: showSubSelection,
-                        maintainState: true,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const SizedBox(height: 40),
-                            Text(
-                              "Por favor, descreva sua(s) lesão(ões)",
-                              style: textTheme.titleLarge?.copyWith(
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              "Quanto mais detalhes (o que, quando, limitações), melhor a IA poderá adaptar seu treino.",
-                              style: theme.textTheme.bodyMedium,
-                            ),
-                            const SizedBox(height: 16),
-                            TextField(
-                              controller: _injuryController,
-                              focusNode: _injuryFocusNode,
-                              decoration: const InputDecoration(
-                                labelText: 'Descreva sua lesão aqui...',
-                              ),
-                              style: textTheme.bodyLarge,
-                              maxLines: 5,
-                              textInputAction: TextInputAction.done,
-                              textCapitalization: TextCapitalization.sentences,
-                            ),
-                          ],
-                        ),
-                      ),
+                      curve: Curves.easeInOut,
+                      alignment: Alignment.topCenter,
+                      child: showSubSelection
+                          ? Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const SizedBox(height: 24),
+                                Text(
+                                  "Por favor, descreva sua(s) lesão(ões)",
+                                  style: textTheme.titleLarge?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  "Quanto mais detalhes (o que, quando, limitações), melhor a IA poderá adaptar seu treino.",
+                                  style: theme.textTheme.bodyMedium,
+                                ),
+                                const SizedBox(height: 16),
+                                TextField(
+                                  controller: _injuryController,
+                                  focusNode: _injuryFocusNode,
+                                  decoration: const InputDecoration(
+                                    labelText: 'Descreva sua lesão aqui...',
+                                    hintText:
+                                        "Seja específico. Ex: 'Tenho hérnia de disco na lombar' ou 'Operei o menisco do joelho direito há 1 ano'.",
+                                    hintMaxLines: 3,
+                                  ),
+                                  style: textTheme.bodyLarge,
+                                  maxLines: 3,
+                                  textInputAction: TextInputAction.done,
+                                  textCapitalization:
+                                      TextCapitalization.sentences,
+                                ),
+                              ],
+                            )
+                          : const SizedBox.shrink(),
                     ),
                     const SizedBox(height: 40),
                   ],

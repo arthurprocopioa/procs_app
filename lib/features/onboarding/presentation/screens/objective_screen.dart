@@ -54,9 +54,6 @@ class _ObjectiveScreenState extends State<ObjectiveScreen> {
     final currentObjective = onboardingProvider.data.objective;
     final theme = Theme.of(context);
 
-    // ---
-    // V3 (CORREÇÃO): AppBar agora é nulo; usamos um Row customizado no Body
-    // ---
     return Scaffold(
       body: SafeArea(
         child: Column(
@@ -105,7 +102,7 @@ class _ObjectiveScreenState extends State<ObjectiveScreen> {
                         context
                             .read<OnboardingProvider>()
                             .setObjective('perder_gordura');
-                        HapticService.lightImpact();
+                        _onNext(context, 'perder_gordura');
                       },
                     ),
                     const SizedBox(height: 16),
@@ -116,7 +113,7 @@ class _ObjectiveScreenState extends State<ObjectiveScreen> {
                         context
                             .read<OnboardingProvider>()
                             .setObjective('manter_saude');
-                        HapticService.lightImpact();
+                        _onNext(context, 'manter_saude');
                       },
                     ),
                     const SizedBox(height: 16),
@@ -127,24 +124,11 @@ class _ObjectiveScreenState extends State<ObjectiveScreen> {
                         context
                             .read<OnboardingProvider>()
                             .setObjective('ganhar_musculo');
-                        HapticService.lightImpact();
+                        _onNext(context, 'ganhar_musculo');
                       },
                     ),
                   ],
                 ),
-              ),
-            ),
-
-            // ---
-            // V3: Botão de Navegação (FIXO NO RODAPÉ)
-            // ---
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
-              child: ElevatedButton(
-                onPressed: currentObjective == null
-                    ? null // Botão desabilitado
-                    : () => _onNext(context, currentObjective),
-                child: const Text('Continuar'),
               ),
             ),
           ],

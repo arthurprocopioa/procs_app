@@ -36,6 +36,11 @@ class _DietRestrictionsScreenState extends State<DietRestrictionsScreen> {
     _otherRestrictionController =
         TextEditingController(text: initialOther ?? '');
 
+    // Adiciona listener para atualizar o botão quando o texto mudar
+    _otherRestrictionController.addListener(() {
+      setState(() {});
+    });
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<AnalyticsService>(context, listen: false)
           .trackScreenView('diet_restrictions');
@@ -86,21 +91,26 @@ class _DietRestrictionsScreenState extends State<DietRestrictionsScreen> {
     final provider = context.watch<OnboardingProvider>();
     final data = provider.data;
 
-    // Validação: Pode continuar se "Não tenho" for true OU se tiver alguma restrição marcada
-    final bool canContinue =
-        data.dietHasNoRestrictions || data.dietRestrictions.isNotEmpty;
-
     final bool showOtherTextField = data.dietRestrictions.contains('outros');
+
+    // Validação: Pode continuar se "Não tenho" for true OU se tiver alguma restrição marcada
+    // E se "Outros" estiver marcado, o texto não pode ser vazio.
+    final bool canContinue =
+        (data.dietHasNoRestrictions || data.dietRestrictions.isNotEmpty) &&
+            (!showOtherTextField ||
+                _otherRestrictionController.text.trim().isNotEmpty);
 
     return Scaffold(
       appBar: null,
-      bottomNavigationBar: Padding(
-        padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
-        child: ElevatedButton(
-          onPressed: canContinue ? _onNext : null,
-          child: const Text('Continuar'),
-        ),
-      ),
+      bottomNavigationBar: showOtherTextField
+          ? Padding(
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
+              child: ElevatedButton(
+                onPressed: canContinue ? _onNext : null,
+                child: const Text('Continuar'),
+              ),
+            )
+          : null,
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -142,20 +152,18 @@ class _DietRestrictionsScreenState extends State<DietRestrictionsScreen> {
 
                     // CARD EXCLUSIVO: NÃO TENHO RESTRIÇÃO
                     Padding(
-                      padding: const EdgeInsets.only(bottom: 16.0),
+                      padding: const EdgeInsets.symmetric(vertical: 6.0),
                       child: PremiumSelectionCard(
                         text: "Não tenho restrição alimentar",
                         isSelected: data.dietHasNoRestrictions,
                         onTap: () {
                           HapticService.lightImpact();
-                          // Toggle simples: se clicar, ativa e limpa o resto (lógica no Provider)
-                          // Se já estiver ativo e clicar de novo, desativa (fica tudo vazio)
                           provider.setDietHasNoRestrictions(
                               !data.dietHasNoRestrictions);
 
-                          // Limpa o foco e o texto de outros se desmarcar restrições
                           _otherRestrictionController.clear();
                           FocusScope.of(context).unfocus();
+                          _onNext(); // Auto-advance
                         },
                       ),
                     ),
@@ -171,9 +179,8 @@ class _DietRestrictionsScreenState extends State<DietRestrictionsScreen> {
                           isSelected: isSelected,
                           onTap: () {
                             HapticService.lightImpact();
-                            // CORREÇÃO: Sempre permite clicar.
-                            // O Provider cuidará de desmarcar "Não tenho restrição" automaticamente.
                             provider.toggleDietRestriction(entry.key);
+                            _onNext(); // Auto-advance
                           },
                         ),
                       );

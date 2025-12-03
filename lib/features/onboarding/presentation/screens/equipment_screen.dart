@@ -40,6 +40,10 @@ class _EquipmentScreenState extends State<EquipmentScreen> {
     final initialOther = context.read<OnboardingProvider>().data.otherEquipment;
     _otherEquipmentController = TextEditingController(text: initialOther);
 
+    _otherEquipmentController.addListener(() {
+      setState(() {});
+    });
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<AnalyticsService>(context, listen: false)
           .trackScreenView('equipment');
@@ -82,18 +86,27 @@ class _EquipmentScreenState extends State<EquipmentScreen> {
     final provider = context.watch<OnboardingProvider>();
 
     final String? selectedLocation = provider.data.equipmentLocation;
-    final bool canContinue = selectedLocation != null;
     final bool showSubSelection = selectedLocation == 'casa_com';
+
+    // Validação:
+    // 1. Deve ter uma localização selecionada.
+    // 2. Se for "casa_com", deve ter pelo menos um equipamento OU texto em "Outros".
+    final bool canContinue = selectedLocation != null &&
+        (!showSubSelection ||
+            provider.data.homeEquipment.isNotEmpty ||
+            _otherEquipmentController.text.trim().isNotEmpty);
 
     return Scaffold(
       appBar: null,
-      bottomNavigationBar: Padding(
-        padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
-        child: ElevatedButton(
-          onPressed: canContinue ? _onNext : null,
-          child: const Text('Continuar'),
-        ),
-      ),
+      bottomNavigationBar: showSubSelection
+          ? Padding(
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
+              child: ElevatedButton(
+                onPressed: canContinue ? _onNext : null,
+                child: const Text('Continuar'),
+              ),
+            )
+          : null,
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -125,14 +138,24 @@ class _EquipmentScreenState extends State<EquipmentScreen> {
                     ),
                     const SizedBox(height: 32),
                     ..._locationOptions.entries.map((entry) {
+                      final isSelected = selectedLocation == entry.key;
                       return Padding(
                         padding: const EdgeInsets.symmetric(vertical: 6.0),
                         child: PremiumSelectionCard(
                           text: entry.value,
-                          isSelected: selectedLocation == entry.key,
+                          isSelected: isSelected,
                           onTap: () {
                             HapticService.lightImpact();
-                            provider.setEquipmentLocation(entry.key);
+                            if (isSelected) {
+                              // Toggle: Desmarca se já estiver selecionado
+                              provider.setEquipmentLocation(null);
+                            } else {
+                              provider.setEquipmentLocation(entry.key);
+                              // Auto-advance se não for "casa_com"
+                              if (entry.key != 'casa_com') {
+                                _onNext();
+                              }
+                            }
                             FocusScope.of(context).unfocus();
                           },
                         ),

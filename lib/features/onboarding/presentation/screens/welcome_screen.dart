@@ -1,4 +1,3 @@
-import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 // V3.1.8: FontAwesome não é mais necessário
@@ -30,8 +29,10 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   // ---
   Future<void> _onStart(BuildContext context) async {
     // V3: Haptics refatorado para usar o HapticService
+    final analytics = context.read<AnalyticsService>();
     await HapticService.mediumImpact();
-    context.read<AnalyticsService>().trackEvent(
+
+    analytics.trackEvent(
       'onboarding_start_guest',
       parameters: {'login_method': 'guest'},
     );
@@ -48,11 +49,15 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   // ---
   Future<void> _onLogin(BuildContext context) async {
     // V3: Haptics refatorado para usar o HapticService
+    final analytics = context.read<AnalyticsService>();
     await HapticService.mediumImpact();
-    context.read<AnalyticsService>().trackEvent(
+
+    analytics.trackEvent(
       'onboarding_login_attempt',
       parameters: {'login_method': 'login_button_stub'},
     );
+
+    if (!context.mounted) return;
 
     // Handoff V3.1.7: Lógica (AuthServiceV3) não implementada
     ScaffoldMessenger.of(context).showSnackBar(
@@ -97,7 +102,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
               Text(
                 'Sua jornada de treino, dieta e acompanhamento 100% personalizada.',
                 style: textTheme.bodyLarge?.copyWith(
-                  color: theme.colorScheme.onSurface.withOpacity(0.8),
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
                 ),
                 // CRÍTICA 4b: Textos agora centralizados
                 textAlign: TextAlign.center,

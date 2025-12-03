@@ -61,22 +61,9 @@ class _SupplementsScreenState extends State<SupplementsScreen> {
     final provider = context.watch<OnboardingProvider>();
     final selectedInterest = provider.data.interestInSupplements;
 
-    // O botão só é habilitado se o interesse for definido (true ou false)
-    final bool canContinue = selectedInterest != null;
-
     return Scaffold(
       // 1. AppBar removido
       appBar: null,
-
-      // 2. Botão de Ação (Inferior Fixo - V3 UI)
-      bottomNavigationBar: Padding(
-        padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
-        child: ElevatedButton(
-          onPressed: canContinue ? _onNext : null,
-          // 3. Texto do botão alterado para "Finalizar"
-          child: const Text('Continuar'),
-        ),
-      ),
 
       // 4. Body para a barra de navegação customizada e conteúdo
       body: SafeArea(
@@ -117,7 +104,10 @@ class _SupplementsScreenState extends State<SupplementsScreen> {
                     // Subtítulo (V3)
                     Text(
                       "O Procs AI pode oferecer sugestões educacionais (sem marcas ou dosagens) para otimizar seus resultados.",
-                      style: theme.textTheme.bodyMedium,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color:
+                            theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                      ),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 48),
@@ -129,8 +119,8 @@ class _SupplementsScreenState extends State<SupplementsScreen> {
                         text: "Sim, estou aberto(a) a sugestões",
                         isSelected: selectedInterest == true,
                         onTap: () {
-                          HapticService.lightImpact();
                           provider.setInterestInSupplements(true);
+                          _onNext();
                         },
                       ),
                     ),
@@ -139,8 +129,8 @@ class _SupplementsScreenState extends State<SupplementsScreen> {
                       text: "Não, prefiro focar 100% na alimentação",
                       isSelected: selectedInterest == false,
                       onTap: () {
-                        HapticService.lightImpact();
                         provider.setInterestInSupplements(false);
+                        _onNext();
                       },
                     ),
 

@@ -8,8 +8,8 @@ import '../widgets/premium_progress_bar.dart';
 import '../widgets/premium_selection_card.dart';
 import '../widgets/procs_back_button.dart';
 
-/// V3 (PONTO 6): Tela de Agenda (Frequência)
-/// REFACTOR FINAL: Seleção direta de quantidade de treinos. Simples e direto.
+/// V3 (PONTO 6): Tela de Agenda (Frequência e Dias)
+/// REFACTOR FINAL: Seleção de quantidade de treinos e dias da semana.
 class ScheduleScreen extends StatefulWidget {
   const ScheduleScreen({super.key});
 
@@ -18,6 +18,8 @@ class ScheduleScreen extends StatefulWidget {
 }
 
 class _ScheduleScreenState extends State<ScheduleScreen> {
+  final ScrollController _scrollController = ScrollController();
+
   // Mapa simplificado apenas para quantidade
   final Map<int, String> _frequencyOptions = {
     1: '1 treino por semana',
@@ -29,6 +31,27 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     7: '7 treinos por semana',
   };
 
+  final Map<String, String> _weekDays = {
+    'monday': 'Segunda',
+    'tuesday': 'Terça',
+    'wednesday': 'Quarta',
+    'thursday': 'Quinta',
+    'friday': 'Sexta',
+    'saturday': 'Sábado',
+    'sunday': 'Domingo',
+  };
+
+  // Ordem correta dos dias para exibição
+  final List<String> _weekDaysOrder = [
+    'monday',
+    'tuesday',
+    'wednesday',
+    'thursday',
+    'friday',
+    'saturday',
+    'sunday',
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -36,6 +59,50 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       Provider.of<AnalyticsService>(context, listen: false)
           .trackScreenView('schedule');
     });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onFrequencySelected(int frequency) {
+    final provider = context.read<OnboardingProvider>();
+    provider.setScheduleTimesPerWeek(frequency);
+
+    // Auto-scroll para a seção de dias
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 500),
+          curve: Curves.easeInOut,
+        );
+      }
+    });
+  }
+
+  void _onDayToggled(String dayKey) {
+    final provider = context.read<OnboardingProvider>();
+    final currentDays = Set<String>.from(provider.data.selectedTrainingDays);
+
+    if (currentDays.contains(dayKey)) {
+      currentDays.remove(dayKey);
+    } else {
+      // Limita a seleção à frequência escolhida
+      final frequency = provider.data.scheduleTimesPerWeek ?? 0;
+      if (currentDays.length < frequency) {
+        currentDays.add(dayKey);
+      } else {
+        // Opcional: Feedback visual ou haptico de erro/limite
+        HapticService.lightImpact();
+        return;
+      }
+    }
+
+    provider.setSelectedTrainingDays(currentDays);
+    HapticService.lightImpact();
   }
 
   void _onNext(BuildContext context) {
@@ -46,6 +113,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       'onboarding_schedule_set',
       parameters: {
         'schedule_times': provider.data.scheduleTimesPerWeek,
+        'selected_days': provider.data.selectedTrainingDays.toList(),
       },
     );
 
@@ -60,19 +128,14 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     final textTheme = theme.textTheme;
     final provider = context.watch<OnboardingProvider>();
     final data = provider.data;
+    final frequency = data.scheduleTimesPerWeek;
 
-    // Apenas valida se a quantidade foi selecionada
-    final bool canContinue = data.scheduleTimesPerWeek != null;
+    // Validação: Frequência selecionada E número de dias igual à frequência
+    final bool isValid =
+        frequency != null && data.selectedTrainingDays.length == frequency;
 
     return Scaffold(
       appBar: null,
-      bottomNavigationBar: Padding(
-        padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
-        child: ElevatedButton(
-          onPressed: canContinue ? () => _onNext(context) : null,
-          child: const Text('Continuar'),
-        ),
-      ),
       body: SafeArea(
         child: Column(
           children: [
@@ -93,6 +156,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
 
             Expanded(
               child: SingleChildScrollView(
+                controller: _scrollController,
                 padding: const EdgeInsets.symmetric(horizontal: 24.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -111,28 +175,95 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                     ),
                     const SizedBox(height: 32),
 
-                    // Lista direta de opções de frequência
+                    // SEÇÃO 1: Frequência
                     ..._frequencyOptions.entries.map((entry) {
                       final key = entry.key;
                       final text = entry.value;
-                      final isSelected = data.scheduleTimesPerWeek == key;
+                      final isSelected = frequency == key;
 
                       return Padding(
                         padding: const EdgeInsets.symmetric(vertical: 6.0),
                         child: PremiumSelectionCard(
                           text: text,
                           isSelected: isSelected,
-                          onTap: () {
-                            HapticService.lightImpact();
-                            provider.setScheduleTimesPerWeek(key);
-                          },
+                          onTap: () => _onFrequencySelected(key),
                         ),
                       );
-                    }).toList(),
+                    }),
 
                     const SizedBox(height: 40),
+
+                    // SEÇÃO 2: Dias da Semana (Só aparece se frequência selecionada)
+                    if (frequency != null) ...[
+                      Text(
+                        "Quais dias você prefere treinar?",
+                        style: textTheme.titleLarge
+                            ?.copyWith(fontWeight: FontWeight.bold),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        "Selecione $frequency dias.",
+                        style: textTheme.bodyMedium?.copyWith(
+                          color: data.selectedTrainingDays.length == frequency
+                              ? theme.colorScheme.primary
+                              : theme.colorScheme.onSurface
+                                  .withValues(alpha: 0.7),
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 24),
+                      Wrap(
+                        spacing: 12,
+                        runSpacing: 12,
+                        alignment: WrapAlignment.center,
+                        children: _weekDaysOrder.map((dayKey) {
+                          final isSelected =
+                              data.selectedTrainingDays.contains(dayKey);
+                          final label = _weekDays[dayKey]!;
+
+                          return FilterChip(
+                            label: Text(label),
+                            selected: isSelected,
+                            onSelected: (_) => _onDayToggled(dayKey),
+                            selectedColor: theme.colorScheme.primary,
+                            labelStyle: TextStyle(
+                              color: isSelected
+                                  ? theme.colorScheme.onPrimary
+                                  : theme.colorScheme.onSurface,
+                              fontWeight: isSelected
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
+                            ),
+                            backgroundColor: theme.cardTheme.color,
+                            checkmarkColor: theme.colorScheme.onPrimary,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20),
+                              side: BorderSide(
+                                color: isSelected
+                                    ? Colors.transparent
+                                    : theme.colorScheme.outline
+                                        .withValues(alpha: 0.3),
+                              ),
+                            ),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 4, vertical: 8),
+                          );
+                        }).toList(),
+                      ),
+                      const SizedBox(height: 40),
+                    ],
                   ],
                 ),
+              ),
+            ),
+
+            // Botão Continuar
+            Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: ElevatedButton(
+                onPressed: isValid ? () => _onNext(context) : null,
+                child: const Text("Continuar"),
               ),
             ),
           ],

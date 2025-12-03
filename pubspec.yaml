@@ -37,6 +37,10 @@ dependencies:
   # 5. Auth Social V3
   google_sign_in: ^6.2.1 
   sign_in_with_apple: ^6.1.0
+  flutter_localizations:
+    sdk: flutter
+  flutter_animate: ^4.5.2
+  confetti: ^0.8.0
 
 dev_dependencies:
   flutter_test:
@@ -53,8 +57,8 @@ flutter:
   assets:
     - assets/images/hero_image.png
     # Certifique-se de colocar seus ícones aqui quando criá-los:
-    # - assets/images/app_icon.png
-    # - assets/images/splash_logo.png
+    - assets/images/background_premium.png
+    - assets/images/splash_logo.png
 
 # --- CONFIGURAÇÃO DOS ÍCONES ---
 flutter_launcher_icons:

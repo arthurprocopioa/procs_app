@@ -7,6 +7,7 @@ class PremiumSelectionCard extends StatelessWidget {
   final bool isSelected;
   final VoidCallback onTap;
   final TextAlign textAlign;
+  final IconData? icon; // NOVO
 
   const PremiumSelectionCard({
     super.key,
@@ -14,6 +15,7 @@ class PremiumSelectionCard extends StatelessWidget {
     required this.isSelected,
     required this.onTap,
     this.textAlign = TextAlign.left,
+    this.icon, // NOVO
   });
 
   @override
@@ -50,6 +52,14 @@ class PremiumSelectionCard extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.start,
           children: [
+            if (icon != null) ...[
+              Icon(
+                icon,
+                color: isSelected ? colorScheme.primary : colorScheme.onSurface,
+                size: 24,
+              ),
+              const SizedBox(width: 16),
+            ],
             Expanded(
               child: Text(
                 text,

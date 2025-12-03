@@ -69,35 +69,15 @@ class _TrainingTimeScreenState extends State<TrainingTimeScreen> {
     ));
   }
 
-  // Lógica para setar o tempo (Seleção Única)
-  void _onSelectTime(OnboardingProvider provider, String key) {
-    HapticService.lightImpact();
-    provider.setTrainingTime(key);
-    // Não há mais FocusNode para gerenciar. Limpeza máxima!
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final textTheme = theme.textTheme;
     final provider = context.watch<OnboardingProvider>();
     final selectedTimeKey = provider.data.trainingTime;
-
-    // Lógica simplificada: canContinue é true se algo foi selecionado
-    final bool canContinue = selectedTimeKey != null;
 
     return Scaffold(
       // 1. AppBar removido
       appBar: null,
-
-      // 2. Botão de Continuação fixado no rodapé
-      bottomNavigationBar: Padding(
-        padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
-        child: ElevatedButton(
-          onPressed: canContinue ? _onNext : null,
-          child: const Text('Continuar'),
-        ),
-      ),
 
       // 3. Body para a barra de navegação customizada e conteúdo
       body: SafeArea(
@@ -146,7 +126,10 @@ class _TrainingTimeScreenState extends State<TrainingTimeScreen> {
                         child: PremiumSelectionCard(
                           text: text,
                           isSelected: isSelected,
-                          onTap: () => _onSelectTime(provider, key),
+                          onTap: () {
+                            provider.setTrainingTime(key);
+                            _onNext();
+                          },
                         ),
                       );
                     }).toList(),

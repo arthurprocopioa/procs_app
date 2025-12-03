@@ -24,7 +24,7 @@ class PremiumProgressBar extends StatelessWidget {
       alignment: Alignment.centerLeft,
       decoration: BoxDecoration(
         // Fundo do trilho: Cinza muito escuro e sutil
-        color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
+        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(2.0), // Bordas arredondadas finas
       ),
       child: FractionallySizedBox(
@@ -40,7 +40,7 @@ class PremiumProgressBar extends StatelessWidget {
             // Sombra REMOVIDA ou muito sutil para o look "flat" e limpo
             boxShadow: [
               BoxShadow(
-                color: theme.colorScheme.primary.withOpacity(0.4),
+                color: theme.colorScheme.primary.withValues(alpha: 0.4),
                 blurRadius: 6.0,
                 offset: const Offset(0, 0), // Glow centralizado
                 spreadRadius: 0.0,

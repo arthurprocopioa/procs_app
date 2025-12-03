@@ -69,20 +69,8 @@ class _UserLocationScreenState extends State<UserLocationScreen> {
     final provider = context.watch<OnboardingProvider>();
     final selectedRegion = provider.data.userRegion;
 
-    // O botão só é habilitado se uma região for selecionada
-    final bool canContinue = selectedRegion != null;
-
     return Scaffold(
       appBar: null,
-
-      // Botão de Ação (Inferior Fixo - V3 UI)
-      bottomNavigationBar: Padding(
-        padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
-        child: ElevatedButton(
-          onPressed: canContinue ? _onNext : null,
-          child: const Text('Finalizar'),
-        ),
-      ),
 
       // Body para a barra de navegação customizada e conteúdo
       body: SafeArea(
@@ -139,12 +127,12 @@ class _UserLocationScreenState extends State<UserLocationScreen> {
                           text: text,
                           isSelected: selectedRegion == key,
                           onTap: () {
-                            HapticService.lightImpact();
                             provider.setUserRegion(key);
+                            _onNext();
                           },
                         ),
                       );
-                    }).toList(),
+                    }),
 
                     const SizedBox(height: 96),
                   ],

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/services.dart';
+// import 'package:flutter/services.dart';
 
 // V3.1.22 (A CORREÇÃO):
 // O Handoff V3.1.21 (anterior) falhou em incluir estes Handoffs V3.1.17 (imports).
@@ -120,9 +120,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
     // 1. V3.1.21: Combinar os dados V3.1.14 e V3.1.6
     final userId = user.user!.uid;
-    final userName =
-        user.user!.displayName ?? data.name; // V3.1.21 (Handoff V3.1.14)
-    final userEmail = user.user!.email;
+    // final userName =
+    //     user.user!.displayName ?? data.name; // V3.1.21 (Handoff V3.1.14)
+    // final userEmail = user.user!.email;
 
     // 2. V3.1.21: Converter o Data Model V3.1.14 para JSON
     // (ex: final jsonData = data.toJson();)

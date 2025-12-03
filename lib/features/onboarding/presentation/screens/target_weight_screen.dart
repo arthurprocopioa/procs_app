@@ -242,7 +242,8 @@ class _TargetWeightScreenState extends State<TargetWeightScreen> {
                       height: isMajorTick ? 40 : 25,
                       color: isSelected
                           ? theme.colorScheme.primary
-                          : theme.textTheme.bodyMedium?.color?.withOpacity(0.5),
+                          : theme.textTheme.bodyMedium?.color
+                              ?.withValues(alpha: 0.5),
                     ),
                   ],
                 ),

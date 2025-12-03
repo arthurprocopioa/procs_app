@@ -1,12 +1,13 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import '../widgets/vibrating_progress_indicator.dart';
+import '../widgets/staged_progress_indicator.dart';
 
 class BaseLoadingScreen extends StatefulWidget {
   final String title;
   final List<String> messages;
   final Duration totalDuration;
   final VoidCallback onComplete;
+  final List<double>? stops; // Pontos de parada
 
   const BaseLoadingScreen({
     super.key,
@@ -14,6 +15,7 @@ class BaseLoadingScreen extends StatefulWidget {
     required this.messages,
     required this.totalDuration,
     required this.onComplete,
+    this.stops,
   });
 
   @override
@@ -66,11 +68,12 @@ class _BaseLoadingScreenState extends State<BaseLoadingScreen> {
               ),
               const SizedBox(height: 40),
 
-              // Novo Indicador de Progresso Vibrante
-              VibratingProgressIndicator(
+              // Novo Indicador de Progresso com Estágios
+              StagedProgressIndicator(
                 duration: widget.totalDuration,
                 color: theme.colorScheme.primary,
                 onComplete: widget.onComplete,
+                stops: widget.stops,
               ),
               const SizedBox(height: 40),
 

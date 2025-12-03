@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
-import 'package:procs_ai/features/onboarding/presentation/screens/checkout_screen.dart';
 
 // V3.5.8 (REMOVIDO) Facebook
 // import 'package:facebook_app_events/facebook_app_events.dart';
@@ -18,8 +18,10 @@ import 'features/onboarding/application/onboarding_provider.dart';
 // import 'package:firebase_auth/firebase_auth.dart';
 
 // Importação da tela de boas-vindas
+
 import 'features/onboarding/presentation/screens/welcome_screen.dart'; // Tela de início do aplicativo
-// import 'features/onboarding/presentation/screens/result_ready_screen.dart'; // Para direcionar para tela que precisamos
+
+//import 'features/onboarding/presentation/screens/commitment_screen.dart'; // Para direcionar para tela que precisamos
 
 /// V3.5.10 (FIX): Arquitetura de Provider (sem 'sl', 'locator' ou 'AuthService')
 Future<
@@ -112,6 +114,17 @@ class MyApp extends StatelessWidget {
         title: 'Procs AI',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.darkTheme,
+
+        // Configuração de Internacionalização (i18n)
+        localizationsDelegates: const [
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: const [
+          Locale('pt', 'BR'), // Português Brasil
+          Locale('en', 'US'), // Inglês (Fallback)
+        ],
 
         // V3.5.5: Usa o observer injetado (que já está pronto)
         navigatorObservers: [

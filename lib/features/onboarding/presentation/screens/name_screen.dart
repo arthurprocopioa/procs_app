@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:procs_ai/features/onboarding/presentation/screens/welcome_screen.dart';
 import 'package:provider/provider.dart';
 import '../../application/onboarding_provider.dart';
 import 'reception_message_screen.dart';
+
 // V3: Import do HapticService
 import '../../../../core/services/haptic_service.dart';
 

@@ -16,6 +16,8 @@ class OnboardingDataModel {
 
   // Agenda de Treino
   final int? scheduleTimesPerWeek;
+  final Set<String>
+      selectedTrainingDays; // NOVO: Dias da semana selecionados (ex: 'monday', 'wednesday')
   // NOVO: Dias e Horários de Treino (Map<String, TimeOfDay>)
   // Ex: {'monday': TimeOfDay(18, 0), 'wednesday': TimeOfDay(07, 0)}
   // Como TimeOfDay não é serializável facilmente aqui, vamos guardar String "HH:mm"
@@ -27,14 +29,15 @@ class OnboardingDataModel {
   final Set<String> focusAreas;
   final bool hasInjury;
   final String? injuryDetails;
+  final bool? hasHealthCondition; // NOVO: Nível 1 da seleção
   final Set<String> healthConditions;
   final String? healthConditionsOther;
 
   // Cardio
   final String? cardioPreference; // 'sim', 'nao' (IA Decide removido)
   final String? cardioType;
-  final String? cardioOtherDetail;
   final int? cardioTimesPerWeek;
+  final Set<String> selectedCardioDays; // NOVO: Dias de cardio selecionados
   // NOVO: Dias e Horários de Cardio
   final Map<String, String>? cardioNotificationSchedule;
 
@@ -47,6 +50,7 @@ class OnboardingDataModel {
   final List<String>? mealNotificationSchedule;
 
   final Set<String> foodDislikes;
+  final bool eatsEverything; // NOVO
   final bool? interestInSupplements;
   final String? userRegion;
 
@@ -60,6 +64,7 @@ class OnboardingDataModel {
 
   // Permissão Geral
   final bool notificationsEnabled;
+  final bool isPremium;
 
   const OnboardingDataModel({
     this.name,
@@ -73,6 +78,7 @@ class OnboardingDataModel {
     this.targetWeight,
     this.experienceLevel,
     this.scheduleTimesPerWeek,
+    this.selectedTrainingDays = const <String>{}, // NOVO
     this.trainingNotificationSchedule, // NOVO
     this.equipmentLocation,
     this.homeEquipment = const <String>{},
@@ -80,12 +86,13 @@ class OnboardingDataModel {
     this.focusAreas = const <String>{},
     this.hasInjury = false,
     this.injuryDetails,
+    this.hasHealthCondition, // NOVO
     this.healthConditions = const <String>{},
     this.healthConditionsOther,
     this.cardioPreference,
     this.cardioType,
-    this.cardioOtherDetail,
     this.cardioTimesPerWeek,
+    this.selectedCardioDays = const <String>{}, // NOVO
     this.cardioNotificationSchedule, // NOVO
     this.trainingTime,
     this.dietHasNoRestrictions = false,
@@ -94,6 +101,7 @@ class OnboardingDataModel {
     this.mealCount = 4,
     this.mealNotificationSchedule, // NOVO
     this.foodDislikes = const <String>{},
+    this.eatsEverything = false, // NOVO
     this.interestInSupplements,
     this.userRegion,
     this.groceryShoppingFrequency, // NOVO
@@ -101,6 +109,7 @@ class OnboardingDataModel {
     this.phoneNumber,
     this.selectedPlan,
     this.notificationsEnabled = false, // NOVO
+    this.isPremium = false, // Default to false (Free)
   });
 
   OnboardingDataModel copyWith({
@@ -115,6 +124,7 @@ class OnboardingDataModel {
     double? targetWeight,
     String? experienceLevel,
     int? scheduleTimesPerWeek,
+    Set<String>? selectedTrainingDays,
     Map<String, String>? trainingNotificationSchedule,
     String? equipmentLocation,
     Set<String>? homeEquipment,
@@ -122,12 +132,13 @@ class OnboardingDataModel {
     Set<String>? focusAreas,
     bool? hasInjury,
     String? injuryDetails,
+    bool? hasHealthCondition, // NOVO
     Set<String>? healthConditions,
     String? healthConditionsOther,
     String? cardioPreference,
     String? cardioType,
-    String? cardioOtherDetail,
     int? cardioTimesPerWeek,
+    Set<String>? selectedCardioDays,
     Map<String, String>? cardioNotificationSchedule,
     String? trainingTime,
     bool? dietHasNoRestrictions,
@@ -136,6 +147,7 @@ class OnboardingDataModel {
     int? mealCount,
     List<String>? mealNotificationSchedule,
     Set<String>? foodDislikes,
+    bool? eatsEverything, // NOVO
     bool? interestInSupplements,
     String? userRegion,
     int? groceryShoppingFrequency,
@@ -143,6 +155,7 @@ class OnboardingDataModel {
     String? phoneNumber,
     String? selectedPlan,
     bool? notificationsEnabled,
+    bool? isPremium,
   }) {
     return OnboardingDataModel(
       name: name ?? this.name,
@@ -156,6 +169,7 @@ class OnboardingDataModel {
       targetWeight: targetWeight ?? this.targetWeight,
       experienceLevel: experienceLevel ?? this.experienceLevel,
       scheduleTimesPerWeek: scheduleTimesPerWeek ?? this.scheduleTimesPerWeek,
+      selectedTrainingDays: selectedTrainingDays ?? this.selectedTrainingDays,
       trainingNotificationSchedule:
           trainingNotificationSchedule ?? this.trainingNotificationSchedule,
       equipmentLocation: equipmentLocation ?? this.equipmentLocation,
@@ -164,13 +178,14 @@ class OnboardingDataModel {
       focusAreas: focusAreas ?? this.focusAreas,
       hasInjury: hasInjury ?? this.hasInjury,
       injuryDetails: injuryDetails ?? this.injuryDetails,
+      hasHealthCondition: hasHealthCondition ?? this.hasHealthCondition, // NOVO
       healthConditions: healthConditions ?? this.healthConditions,
       healthConditionsOther:
           healthConditionsOther ?? this.healthConditionsOther,
       cardioPreference: cardioPreference ?? this.cardioPreference,
       cardioType: cardioType ?? this.cardioType,
-      cardioOtherDetail: cardioOtherDetail ?? this.cardioOtherDetail,
       cardioTimesPerWeek: cardioTimesPerWeek ?? this.cardioTimesPerWeek,
+      selectedCardioDays: selectedCardioDays ?? this.selectedCardioDays,
       cardioNotificationSchedule:
           cardioNotificationSchedule ?? this.cardioNotificationSchedule,
       trainingTime: trainingTime ?? this.trainingTime,
@@ -182,6 +197,7 @@ class OnboardingDataModel {
       mealNotificationSchedule:
           mealNotificationSchedule ?? this.mealNotificationSchedule,
       foodDislikes: foodDislikes ?? this.foodDislikes,
+      eatsEverything: eatsEverything ?? this.eatsEverything, // NOVO
       interestInSupplements:
           interestInSupplements ?? this.interestInSupplements,
       userRegion: userRegion ?? this.userRegion,
@@ -192,6 +208,7 @@ class OnboardingDataModel {
       phoneNumber: phoneNumber ?? this.phoneNumber,
       selectedPlan: selectedPlan ?? this.selectedPlan,
       notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
+      isPremium: isPremium ?? this.isPremium,
     );
   }
 }

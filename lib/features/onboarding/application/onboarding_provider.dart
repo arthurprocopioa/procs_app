@@ -78,13 +78,20 @@ class OnboardingProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  // NOVO: Salvar dias de treino selecionados
+  void setSelectedTrainingDays(Set<String> days) {
+    if (setEquals(_data.selectedTrainingDays, days)) return;
+    _data = _data.copyWith(selectedTrainingDays: days);
+    notifyListeners();
+  }
+
   // NOVO: Salvar agenda de treino
   void setTrainingNotificationSchedule(Map<String, String> schedule) {
     _data = _data.copyWith(trainingNotificationSchedule: schedule);
     notifyListeners();
   }
 
-  void setEquipmentLocation(String location) {
+  void setEquipmentLocation(String? location) {
     if (_data.equipmentLocation == location) return;
     _data = _data.copyWith(equipmentLocation: location);
     if (location != 'casa_com') {
@@ -143,6 +150,22 @@ class OnboardingProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void setHasHealthCondition(bool hasCondition) {
+    if (_data.hasHealthCondition == hasCondition) return;
+
+    // Se mudou para "Não possuo", limpa as condições específicas
+    if (!hasCondition) {
+      _data = _data.copyWith(
+        hasHealthCondition: false,
+        healthConditions: const <String>{},
+        healthConditionsOther: null,
+      );
+    } else {
+      _data = _data.copyWith(hasHealthCondition: true);
+    }
+    notifyListeners();
+  }
+
   void toggleHealthCondition(String conditionKey) {
     final newConditions = Set<String>.from(_data.healthConditions);
     if (conditionKey == 'none') {
@@ -161,6 +184,9 @@ class OnboardingProvider extends ChangeNotifier {
         newConditions.add(conditionKey);
       }
     }
+
+    // Se selecionou alguma condição específica (que não seja none), garante que hasHealthCondition é true
+    // Mas a lógica principal agora é controlada pelo setHasHealthCondition
     _data = _data.copyWith(healthConditions: newConditions);
     notifyListeners();
   }
@@ -184,16 +210,14 @@ class OnboardingProvider extends ChangeNotifier {
     _data = _data.copyWith(
       cardioPreference: preference,
       cardioType: null,
-      cardioOtherDetail: null,
       cardioTimesPerWeek: null,
     );
     notifyListeners();
   }
 
-  void setCardioType(String type, {String? otherDetail}) {
+  void setCardioType(String type) {
     _data = _data.copyWith(
       cardioType: type,
-      cardioOtherDetail: (type == 'outros') ? otherDetail : null,
     );
     notifyListeners();
   }
@@ -201,6 +225,13 @@ class OnboardingProvider extends ChangeNotifier {
   void setCardioTimesPerWeek(int? times) {
     if (_data.cardioTimesPerWeek == times) return;
     _data = _data.copyWith(cardioTimesPerWeek: times);
+    notifyListeners();
+  }
+
+  // NOVO: Salvar dias de cardio selecionados
+  void setSelectedCardioDays(Set<String> days) {
+    if (setEquals(_data.selectedCardioDays, days)) return;
+    _data = _data.copyWith(selectedCardioDays: days);
     notifyListeners();
   }
 
@@ -265,7 +296,18 @@ class OnboardingProvider extends ChangeNotifier {
 
   void setFoodDislikes(Set<String> dislikes) {
     if (setEquals(_data.foodDislikes, dislikes)) return;
-    _data = _data.copyWith(foodDislikes: dislikes);
+    _data = _data.copyWith(
+      foodDislikes: dislikes,
+      eatsEverything: false,
+    );
+    notifyListeners();
+  }
+
+  void setEatsEverything() {
+    _data = _data.copyWith(
+      eatsEverything: true,
+      foodDislikes: const <String>{},
+    );
     notifyListeners();
   }
 
@@ -308,6 +350,12 @@ class OnboardingProvider extends ChangeNotifier {
   void setSelectedPlan(String plan) {
     if (_data.selectedPlan == plan) return;
     _data = _data.copyWith(selectedPlan: plan);
+    notifyListeners();
+  }
+
+  void setIsPremium(bool isPremium) {
+    if (_data.isPremium == isPremium) return;
+    _data = _data.copyWith(isPremium: isPremium);
     notifyListeners();
   }
 }

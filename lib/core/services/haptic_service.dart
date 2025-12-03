@@ -37,4 +37,13 @@ class HapticService {
       // debugPrint("HapticService (Heavy) Error: $e");
     }
   }
+
+  /// Feedback de seleção: Usado para rolagens de pickers.
+  static Future<void> selectionClick() async {
+    try {
+      await HapticFeedback.selectionClick();
+    } catch (e) {
+      // Falha silenciosa.
+    }
+  }
 }

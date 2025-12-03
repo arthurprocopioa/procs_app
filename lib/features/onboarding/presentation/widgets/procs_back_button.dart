@@ -20,7 +20,7 @@ class ProcsBackButton extends StatelessWidget {
 
     return InkWell(
       // Efeito de toque (opcional, pode ser Colors.transparent)
-      splashColor: theme.colorScheme.surfaceContainer.withOpacity(0.5),
+      splashColor: theme.colorScheme.surfaceContainer.withValues(alpha: 0.5),
       highlightColor: Colors.transparent,
 
       onTap: onPressed ?? () => Navigator.of(context).maybePop(),

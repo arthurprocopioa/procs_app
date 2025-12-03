@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../widgets/base_loading_screen.dart';
-import 'diet_restrictions_screen.dart'; // Próxima tela
+import 'training_plan_ready_message_screen.dart'; // Próxima tela
 
 class LoadingTrainPlanScreen extends StatelessWidget {
   const LoadingTrainPlanScreen({super.key});
@@ -16,11 +16,11 @@ class LoadingTrainPlanScreen extends StatelessWidget {
         "Calculando tempo de descanso...",
         "Personalizando para seu objetivo...",
       ],
-      totalDuration: const Duration(seconds: 8),
+      totalDuration: const Duration(seconds: 6),
       onComplete: () {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
-            builder: (context) => const DietRestrictionsScreen(),
+            builder: (context) => const TrainingPlanReadyMessageScreen(),
           ),
         );
       },

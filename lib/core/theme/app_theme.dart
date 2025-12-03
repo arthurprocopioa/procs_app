@@ -67,40 +67,40 @@ class AppTheme {
     );
 
     // 2. Definições de Texto V3 (Semântica)
-    final TextTheme textThemeV3 = GoogleFonts.interTextTheme(
+    final TextTheme textThemeV3 = GoogleFonts.outfitTextTheme(
       ThemeData.dark().textTheme.apply(
             bodyColor: _textPrimary,
             displayColor: _textPrimary,
           ),
     ).copyWith(
       // (Estes substituem os estilos V1)
-      displayLarge: GoogleFonts.inter(
+      displayLarge: GoogleFonts.outfit(
         fontSize: 32,
         fontWeight: FontWeight.w700,
       ),
-      headlineMedium: GoogleFonts.inter(
+      headlineMedium: GoogleFonts.outfit(
         fontSize: 24,
         fontWeight: FontWeight.w600,
       ),
-      headlineSmall: GoogleFonts.inter(
+      headlineSmall: GoogleFonts.outfit(
         fontSize: 20,
         fontWeight: FontWeight.w600,
       ),
-      bodyLarge: GoogleFonts.inter(
+      bodyLarge: GoogleFonts.outfit(
         fontSize: 16,
         fontWeight: FontWeight.w400,
       ),
-      bodyMedium: GoogleFonts.inter(
+      bodyMedium: GoogleFonts.outfit(
         fontSize: 14,
         fontWeight: FontWeight.w400,
         color: _textSecondary, // Nosso V3 'B3B3B3'
       ),
-      labelLarge: GoogleFonts.inter(
+      labelLarge: GoogleFonts.outfit(
         fontSize: 16,
         fontWeight: FontWeight.w700,
       ),
       // V3 (FINAL CORRIGIDO): Estilo semântico para o título do AppBar
-      titleMedium: GoogleFonts.inter(
+      titleMedium: GoogleFonts.outfit(
         fontSize: 16,
         fontWeight: FontWeight.w500,
         color: _textSecondary, // Cor de Etapa (Ex: "Etapa 4 de 13")
