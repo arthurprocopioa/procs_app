@@ -59,6 +59,7 @@ flutter:
     # Certifique-se de colocar seus ícones aqui quando criá-los:
     - assets/images/background_premium.png
     - assets/images/splash_logo.png
+    - assets/images/focus_areas/
 
 # --- CONFIGURAÇÃO DOS ÍCONES ---
 flutter_launcher_icons:

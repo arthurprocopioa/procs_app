@@ -30,8 +30,29 @@ class _InjuriesScreenState extends State<InjuriesScreen> {
   void initState() {
     super.initState();
     final providerData = context.read<OnboardingProvider>().data;
-    _hasInjury = providerData.hasInjury;
-    _injuryController = TextEditingController(text: providerData.injuryDetails);
+    // Se o valor for falso (padrão ou escolhido), mas não queremos que venha marcado por padrão se nunca foi tocado,
+    // precisamos de uma flag de "visitado" ou o campo deve ser anulável no Model.
+    // Assumindo que o model retorna 'false' por padrão e é isso que está causando o problema:
+    // Vou forçar null se não houver indicativo de interação (ex: detalhes nulos é fraco pois 'não' tem detalhes nulos).
+
+    // Melhor abordagem: garantir que o estado inicial venha do provider, mas se for o padrão 'false' que o usuário não escolheu, isso é um problema do Model ter default.
+    // Vou ajustar para ler do provider, mas se for o arranque inicial e quisermos 'limpo', o model deveria ser anulável.
+
+    // WORKAROUND: Se o provider diz 'false' mas na verdade é só o default,
+    // vamos assumir que queremos começar como 'null' (sem seleção) SE for a primeira vez.
+    // Porém, como saber se é a primeira vez?
+    // Ideal: Alterar o Model para bool? hasInjury.
+
+    _hasInjury =
+        providerData.hasInjury; // Se isso é false, aparece selecionado.
+
+    // SE O USER PEDIU PARA NÃO VIR MARCADO, O PROVIDER ESTÁ TRAZENDO 'FALSE'.
+    // VOU SETAR COMO NULL INCONDICIONALMENTE NO INIT? NÃO, POIS PERDE O VOLTAR.
+
+    // TENTATIVA: Assumir que se for false, mostra desmarcado? Impossível, pois 'Não' é false.
+    // CONCLUSÃO: O campo no model DEVE ser nullable ou está inicializado errado.
+
+    // VOU LER O ARQUIVO DO MODELO AGORA PARA CORRIGIR NA RAIZ.
 
     // Adiciona listener para atualizar o botão quando o texto mudar
     _injuryController.addListener(() {

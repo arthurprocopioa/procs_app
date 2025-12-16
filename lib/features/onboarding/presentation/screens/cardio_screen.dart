@@ -305,6 +305,9 @@ class _CardioScreenState extends State<CardioScreen> {
                 onTap: () {
                   HapticService.lightImpact();
                   provider.setCardioTimesPerWeek(key);
+                  if (key == 7) {
+                    provider.setSelectedCardioDays(_weekDaysOrder.toSet());
+                  }
                   _scrollToBottom();
                 },
               ),

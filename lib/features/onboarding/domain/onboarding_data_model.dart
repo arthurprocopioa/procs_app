@@ -27,7 +27,7 @@ class OnboardingDataModel {
   final Set<String> homeEquipment;
   final String? otherEquipment;
   final Set<String> focusAreas;
-  final bool hasInjury;
+  final bool? hasInjury;
   final String? injuryDetails;
   final bool? hasHealthCondition; // NOVO: Nível 1 da seleção
   final Set<String> healthConditions;
@@ -84,7 +84,7 @@ class OnboardingDataModel {
     this.homeEquipment = const <String>{},
     this.otherEquipment,
     this.focusAreas = const <String>{},
-    this.hasInjury = false,
+    this.hasInjury,
     this.injuryDetails,
     this.hasHealthCondition, // NOVO
     this.healthConditions = const <String>{},

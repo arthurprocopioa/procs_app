@@ -12,8 +12,7 @@ import '../../../../core/services/haptic_service.dart';
 import '../../application/onboarding_provider.dart';
 // V3.1.21 (NOVO): A "Estrela Norte V3.1.21" (Seu Handoff)
 // Esta é a nova Tela 1.25 (V3.1.21)
-import 'login_screen.dart';
-import '../../../../features/dashboard/presentation/screens/main_dashboard_screen.dart';
+import '../../../../features/home/presentation/main_wrapper.dart';
 
 /// Tela 1.24: O "Paywall" V3
 ///
@@ -90,10 +89,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       // 7. V3.1.21 (A "Estrela Norte V3.1.21"): Navega para a Tela 1.25
       // (Handoff V3.1.21: "A tela checkout_screen deve começar a ir para login_screen")
       provider.setIsPremium(true); // Set Premium status
-      Navigator.of(context).push(
+      Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(
-          builder: (context) => const LoginScreen(),
+          builder: (context) => const MainWrapper(),
         ),
+        (route) => false,
       );
 
       // 8. V3.1.21: Para o spinner (V3.1.21) *após* a navegação (V3.1.21)
@@ -226,7 +226,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     provider.setIsPremium(false);
 
     Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (context) => const MainDashboardScreen()),
+      MaterialPageRoute(builder: (context) => const MainWrapper()),
       (route) => false,
     );
   }

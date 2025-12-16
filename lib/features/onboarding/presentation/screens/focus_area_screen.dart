@@ -5,7 +5,6 @@ import '../../../../core/services/analytics_service.dart';
 import '../../../../core/services/haptic_service.dart';
 import '../../application/onboarding_provider.dart';
 import '../widgets/premium_progress_bar.dart';
-import '../widgets/premium_selection_card.dart'; // O Card Oficial
 import '../widgets/procs_back_button.dart';
 
 class FocusAreaScreen extends StatefulWidget {
@@ -16,16 +15,48 @@ class FocusAreaScreen extends StatefulWidget {
 }
 
 class _FocusAreaScreenState extends State<FocusAreaScreen> {
-  final Map<String, String> _focusOptions = {
-    'full_body': 'Corpo Inteiro',
-    'shoulders': 'Ombros',
-    'arms': 'Braços',
-    'back': 'Costas',
-    'chest': 'Peito',
-    'abs': 'Abdômen',
-    'glutes': 'Glúteos',
-    'legs': 'Pernas',
-  };
+  final List<Map<String, String>> _focusOptions = [
+    {
+      'key': 'full_body',
+      'label': 'Corpo inteiro',
+      'image': 'assets/images/focus_areas/full_body.png'
+    },
+    {
+      'key': 'shoulders',
+      'label': 'Ombros',
+      'image': 'assets/images/focus_areas/shoulders.png'
+    },
+    {
+      'key': 'arms',
+      'label': 'Braços',
+      'image': 'assets/images/focus_areas/arms.png'
+    },
+    {
+      'key': 'back',
+      'label': 'Costas',
+      'image': 'assets/images/focus_areas/back.png'
+    },
+    {
+      'key': 'chest',
+      'label': 'Peito',
+      'image': 'assets/images/focus_areas/chest.png'
+    },
+    {
+      'key': 'abs',
+      'label': 'Abdômen',
+      'image': 'assets/images/focus_areas/abs.png'
+    },
+    {
+      'key': 'glutes',
+      'label': 'Glúteos',
+      'image': 'assets/images/focus_areas/glutes.png'
+    },
+    {
+      'key': 'legs',
+      'label': 'Pernas',
+      'image': 'assets/images/focus_areas/legs.png'
+    },
+  ];
 
   @override
   void initState() {
@@ -79,55 +110,114 @@ class _FocusAreaScreenState extends State<FocusAreaScreen> {
               ),
             ),
             Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    const SizedBox(height: 16),
-                    Text(
-                      "Em quais áreas seu treinamento deve se concentrar?",
-                      style: textTheme.headlineMedium,
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      "Isto é opcional. Selecione 'Corpo Inteiro' ou áreas específicas.",
-                      style: textTheme.bodyMedium,
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 32),
-                    ..._focusOptions.entries.map((entry) {
-                      final key = entry.key;
-                      final text = entry.value;
-                      final isSelected = selectedAreas.contains(key);
+              child: Column(
+                children: [
+                  const SizedBox(height: 16),
+                  Text(
+                    "Em quais áreas seu treinamento deve se concentrar?",
+                    style: textTheme.headlineMedium,
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    "Selecione 'Corpo Inteiro' ou áreas específicas.",
+                    style: textTheme.bodyMedium,
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 24),
+                  Expanded(
+                    child: GridView.builder(
+                      padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 3,
+                        crossAxisSpacing: 12,
+                        mainAxisSpacing: 24,
+                        childAspectRatio: 0.75, // Ajustado para imagem + texto
+                      ),
+                      itemCount: _focusOptions.length,
+                      itemBuilder: (context, index) {
+                        final option = _focusOptions[index];
+                        final key = option['key']!;
+                        final label = option['label']!;
+                        final imagePath = option['image']!;
+                        final isSelected = selectedAreas.contains(key);
 
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 6.0),
-                        child: PremiumSelectionCard(
-                          text: text,
-                          isSelected: isSelected,
+                        return GestureDetector(
                           onTap: () {
                             HapticService.lightImpact();
                             provider.toggleFocusArea(key);
-                            // Auto-advance only for Full Body
                             if (key == 'full_body') {
-                              _onNext();
+                              // Optional: auto-advance or just update selection
+                              // _onNext(); // Keeping manual based on previous request "Continuar button"
                             }
                           },
-                        ),
-                      );
-                    }),
-                    const SizedBox(height: 24),
-                  ],
-                ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Expanded(
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    color: Colors
+                                        .white, // Fundo branco como no exemplo do Zing
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(
+                                      color: isSelected
+                                          ? theme.colorScheme.primary
+                                          : Colors.transparent,
+                                      width: 2,
+                                    ),
+                                    boxShadow: [
+                                      if (isSelected)
+                                        BoxShadow(
+                                          color: theme.colorScheme.primary
+                                              .withValues(alpha: 0.3),
+                                          blurRadius: 8,
+                                          offset: const Offset(0, 4),
+                                        ),
+                                    ],
+                                  ),
+                                  padding: const EdgeInsets.all(
+                                      8.0), // Padding interno da imagem
+                                  child: Image.asset(
+                                    imagePath,
+                                    fit: BoxFit.contain,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return const Icon(Icons.fitness_center,
+                                          color: Colors.grey);
+                                    },
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                label,
+                                style: textTheme.bodySmall?.copyWith(
+                                  fontWeight: isSelected
+                                      ? FontWeight.bold
+                                      : FontWeight.normal,
+                                  color: isSelected
+                                      ? theme.colorScheme.primary
+                                      : theme.colorScheme.onSurface,
+                                ),
+                                textAlign: TextAlign.center,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
               ),
             ),
             Padding(
               padding: const EdgeInsets.all(24.0),
               child: ElevatedButton(
                 onPressed: selectedAreas.isNotEmpty ? _onNext : null,
-                child: const Text("Continuar"),
+                child: const Text("Próximo"),
               ),
             ),
           ],

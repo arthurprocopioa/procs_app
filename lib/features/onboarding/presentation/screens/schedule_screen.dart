@@ -67,11 +67,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     super.dispose();
   }
 
-  void _onFrequencySelected(int frequency) {
-    final provider = context.read<OnboardingProvider>();
-    provider.setScheduleTimesPerWeek(frequency);
-
-    // Auto-scroll para a seção de dias
+  void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
         _scrollController.animateTo(
@@ -81,6 +77,19 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         );
       }
     });
+  }
+
+  void _onFrequencySelected(int times) {
+    HapticService.lightImpact();
+    final provider = context.read<OnboardingProvider>();
+    provider.setScheduleTimesPerWeek(times);
+
+    // OTIMIZAÇÃO: Se for 7 dias, seleciona todos automaticamente
+    if (times == 7) {
+      provider.setSelectedTrainingDays(_weekDaysOrder.toSet());
+    }
+
+    _scrollToBottom();
   }
 
   void _onDayToggled(String dayKey) {
