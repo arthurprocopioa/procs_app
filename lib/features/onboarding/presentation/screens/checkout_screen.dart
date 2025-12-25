@@ -14,6 +14,11 @@ import '../../application/onboarding_provider.dart';
 // Esta é a nova Tela 1.25 (V3.1.21)
 import '../../../../features/home/presentation/main_wrapper.dart';
 
+// IMPORTS V3.5 (Data Storage)
+import 'package:firebase_auth/firebase_auth.dart';
+import '../../../../core/services/firestore_service.dart';
+import '../../../../core/providers/user_data_provider.dart';
+
 /// Tela 1.24: O "Paywall" V3
 ///
 /// V3.1.21 (REFATORADO):
@@ -68,7 +73,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
     try {
       // 4. V3: LÓGICA REVENUECAT (Simulada)
-      // (O Handoff V3.4 (V3.1.21) permanece 100% o mesmo)
       await Future.delayed(const Duration(seconds: 2));
       // (FIM DA SIMULAÇÃO)
 
@@ -80,15 +84,35 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
 
       if (!mounted) return;
 
-      // 6. V3.1.21 (A CORREÇÃO): "Gatilho V2" (V3.1.21) Removido
-      // O Handoff V3.4 (V3.1.21) chamava o _saveDataToFirebaseAndApi (V3.4) aqui.
-      // O Handoff V3.1.21 (correto) "mata" (V3.1.21) essa chamada,
-      // pois ela V3.1.21 viola a "Estrela Norte V2" (V3.1) (sem auth V3.1).
-      // await _saveDataToFirebaseAndApi(context, provider.data); // <-- V3.1.21 (REMOVIDO)
+      // --- LOGICA DE SALVAMENTO (RESTITUIDA E MELHORADA) ---
 
-      // 7. V3.1.21 (A "Estrela Norte V3.1.21"): Navega para a Tela 1.25
-      // (Handoff V3.1.21: "A tela checkout_screen deve começar a ir para login_screen")
+      // 1. Garantir Autenticação
+      final auth = FirebaseAuth.instance;
+      final User? user = auth.currentUser;
+
+      // Se user for null aqui, algo errado aconteceu no fluxo (pois forçamos login no inicio)
+      if (user == null) {
+        throw Exception(
+            'Usuário não autenticado. Por favor, faça login novamente.');
+      }
+
+      // 2. Salvar dados no Firestore
+      debugPrint('Salvando dados para UID: ${user.uid}');
+      final firestoreService = FirestoreService();
+      await firestoreService.saveOnboardingData(user.uid, provider.data);
+
+      // 3. Iniciar escuta dos dados (para receber a resposta da IA)
+      if (mounted) {
+        context.read<UserDataProvider>().listenToUser(user.uid);
+      }
+
+      // --- FIM LOGICA DE SALVAMENTO ---
+
+      // 7. Navega para a MainWrapper
       provider.setIsPremium(true); // Set Premium status
+
+      if (!mounted) return;
+
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(
           builder: (context) => const MainWrapper(),
@@ -96,21 +120,23 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         (route) => false,
       );
 
-      // 8. V3.1.21: Para o spinner (V3.1.21) *após* a navegação (V3.1.21)
-      // (O usuário não verá isso, mas é uma boa prática V3.1.21)
       setState(() => _isPurchasing = false);
     } catch (e) {
-      // 8. V3: Tratamento de Erro (V3.1.21)
+      // 8. V3: Tratamento de Erro
       if (e is! PlatformException || (e).code != "1") {
-        // 1 = "Compra cancelada"
         analytics
             .trackEvent('checkout_error', parameters: {'error': e.toString()});
+        debugPrint('Erro no checkout: $e');
       } else {
         analytics.trackEvent('checkout_cancelled');
       }
 
       if (mounted) {
         setState(() => _isPurchasing = false);
+        // Opcional: Mostrar snackbar de erro
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erro ao processar: $e')),
+        );
       }
     }
   }

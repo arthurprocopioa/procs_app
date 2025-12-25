@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart'; // Import Provider
+import 'package:firebase_auth/firebase_auth.dart'; // Import FirebaseAuth
+import '../../../core/providers/user_data_provider.dart'; // Import Provider
 import '../../logic/presentation/screens/logic_screen.dart';
 import '../../nutrition/presentation/screens/nutrition_screen.dart';
 import '../../workout/presentation/screens/workout_screen.dart';
@@ -14,6 +17,18 @@ class MainWrapper extends StatefulWidget {
 
 class _MainWrapperState extends State<MainWrapper> {
   int _currentIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    // V3: Garantir que os dados sejam inicializados ao entrar na Home
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        context.read<UserDataProvider>().listenToUser(user.uid);
+      }
+    });
+  }
 
   final List<Widget> _screens = [
     const LogicScreen(),

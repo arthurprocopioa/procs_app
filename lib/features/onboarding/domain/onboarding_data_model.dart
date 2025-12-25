@@ -10,6 +10,7 @@ class OnboardingDataModel {
   final int? height;
   final double? currentWeight;
   final String? gender;
+  final String? currentPhysique; // NOVO: Tipo de físico atual
   final String? objective;
   final double? targetWeight;
   final String? experienceLevel;
@@ -59,6 +60,9 @@ class OnboardingDataModel {
   // Dias do mês e horário (Map<int, String>) Ex: {5: "10:00", 20: "10:00"}
   final Map<int, String>? groceryNotificationSchedule;
 
+  final Set<String> selectedSupplements; // NOVO
+  final String? otherSupplements; // NOVO
+
   final String? phoneNumber;
   final String? selectedPlan;
 
@@ -74,6 +78,7 @@ class OnboardingDataModel {
     this.height,
     this.currentWeight,
     this.gender,
+    this.currentPhysique,
     this.objective,
     this.targetWeight,
     this.experienceLevel,
@@ -110,6 +115,8 @@ class OnboardingDataModel {
     this.selectedPlan,
     this.notificationsEnabled = false, // NOVO
     this.isPremium = false, // Default to false (Free)
+    this.selectedSupplements = const <String>{}, // NOVO
+    this.otherSupplements, // NOVO
   });
 
   OnboardingDataModel copyWith({
@@ -156,6 +163,9 @@ class OnboardingDataModel {
     String? selectedPlan,
     bool? notificationsEnabled,
     bool? isPremium,
+    Set<String>? selectedSupplements, // NOVO
+    String? otherSupplements, // NOVO
+    String? currentPhysique, // NOVO: Físico Atual
   }) {
     return OnboardingDataModel(
       name: name ?? this.name,
@@ -165,6 +175,7 @@ class OnboardingDataModel {
       height: height ?? this.height,
       currentWeight: currentWeight ?? this.currentWeight,
       gender: gender ?? this.gender,
+      currentPhysique: currentPhysique ?? this.currentPhysique, // NOVO
       objective: objective ?? this.objective,
       targetWeight: targetWeight ?? this.targetWeight,
       experienceLevel: experienceLevel ?? this.experienceLevel,
@@ -209,6 +220,9 @@ class OnboardingDataModel {
       selectedPlan: selectedPlan ?? this.selectedPlan,
       notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
       isPremium: isPremium ?? this.isPremium,
+      selectedSupplements:
+          selectedSupplements ?? this.selectedSupplements, // NOVO
+      otherSupplements: otherSupplements ?? this.otherSupplements, // NOVO
     );
   }
 }

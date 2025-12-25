@@ -169,4 +169,101 @@ class AppTheme {
       ),
     );
   }
+
+  // ---
+  // V3 LUZ (Light Theme)
+  // ---
+  static ThemeData get lightTheme {
+    const Color lightBg = Color(0xFFF2F2F7);
+    const Color lightSurface = Colors.white;
+    const Color lightTextPrimary = Color(0xFF1C1C1E);
+    const Color lightTextSecondary = Color(0xFF8E8E93);
+
+    const ColorScheme colorSchemeLight = ColorScheme.light(
+      primary: _accentBrand,
+      secondary: _accentBrand,
+      surface: lightBg,
+      surfaceContainer: lightSurface,
+      onSurface: lightTextPrimary,
+      onPrimary: Colors.white,
+      onSecondary: Colors.white,
+      error: _errorRed,
+      onError: Colors.white,
+    );
+
+    final TextTheme textThemeLight = GoogleFonts.outfitTextTheme(
+      ThemeData.light().textTheme.apply(
+            bodyColor: lightTextPrimary,
+            displayColor: lightTextPrimary,
+          ),
+    ).copyWith(
+      displayLarge: GoogleFonts.outfit(
+        fontSize: 32,
+        fontWeight: FontWeight.w700,
+        color: lightTextPrimary,
+      ),
+      headlineMedium: GoogleFonts.outfit(
+        fontSize: 24,
+        fontWeight: FontWeight.w600,
+        color: lightTextPrimary,
+      ),
+      bodyMedium: GoogleFonts.outfit(
+        fontSize: 14,
+        fontWeight: FontWeight.w400,
+        color: lightTextSecondary,
+      ),
+      titleMedium: GoogleFonts.outfit(
+        fontSize: 16,
+        fontWeight: FontWeight.w500,
+        color: lightTextSecondary,
+      ),
+    );
+
+    return ThemeData(
+      brightness: Brightness.light,
+      scaffoldBackgroundColor: lightBg,
+      primaryColor: _accentBrand,
+      colorScheme: colorSchemeLight,
+      textTheme: textThemeLight,
+      appBarTheme: AppBarTheme(
+        backgroundColor: lightBg,
+        elevation: 0,
+        centerTitle: true,
+        iconTheme: const IconThemeData(color: lightTextPrimary),
+        titleTextStyle: textThemeLight.titleMedium,
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: _accentBrand, // Gold no light button
+          foregroundColor: Colors.white,
+          minimumSize: const Size(double.infinity, 56),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          textStyle: textThemeLight.labelLarge?.copyWith(color: Colors.white),
+        ),
+      ),
+      cardTheme: CardThemeData(
+        color: lightSurface,
+        elevation: 2, // Slight shadow in light mode
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+      ),
+      iconTheme: IconThemeData(color: lightTextPrimary),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: lightSurface,
+        hintStyle: textThemeLight.bodyMedium,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12.0),
+          borderSide: BorderSide.none,
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12.0),
+          borderSide: const BorderSide(color: _accentBrand, width: 2.0),
+        ),
+      ),
+    );
+  }
 }

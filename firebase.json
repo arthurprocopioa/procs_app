@@ -1,1 +1,39 @@
-{"flutter":{"platforms":{"android":{"default":{"projectId":"procs-app","appId":"1:470717283669:android:e2aef77f0c9811297ac3dc","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"procs-app","configurations":{"android":"1:470717283669:android:e2aef77f0c9811297ac3dc","ios":"1:470717283669:ios:c58e97b94c5689837ac3dc","macos":"1:470717283669:ios:c58e97b94c5689837ac3dc","web":"1:470717283669:web:006fd28fecdd123d7ac3dc","windows":"1:470717283669:web:d9e29ad63a9fc6847ac3dc"}}}}}}
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "procs-app",
+          "appId": "1:470717283669:android:e2aef77f0c9811297ac3dc",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "procs-app",
+          "configurations": {
+            "android": "1:470717283669:android:e2aef77f0c9811297ac3dc",
+            "ios": "1:470717283669:ios:c58e97b94c5689837ac3dc",
+            "macos": "1:470717283669:ios:c58e97b94c5689837ac3dc",
+            "web": "1:470717283669:web:006fd28fecdd123d7ac3dc",
+            "windows": "1:470717283669:web:d9e29ad63a9fc6847ac3dc"
+          }
+        }
+      }
+    }
+  },
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "default",
+      "ignore": [
+        "node_modules",
+        ".git",
+        "firebase-debug.log",
+        "firebase-debug.*.log",
+        "*.local"
+      ],
+      "predeploy": []
+    }
+  ]
+}

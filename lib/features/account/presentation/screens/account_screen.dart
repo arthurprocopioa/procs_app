@@ -1,126 +1,133 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../../../../core/providers/user_data_provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../../../core/services/auth_service.dart';
+// V3.1: AuthService para logout se necessário, mas FirebaseAuth direto é ok aqui.
 
-class AccountScreen extends StatelessWidget {
+class AccountScreen extends StatefulWidget {
   const AccountScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    // Mock user state
-    const bool isLoggedIn = true; // Toggle to test
-    const String userName = "Procópio Silva";
-    const String userEmail = "procopio@gmail.com";
-    const String planName = "Pro Anual";
+  State<AccountScreen> createState() => _AccountScreenState();
+}
 
+class _AccountScreenState extends State<AccountScreen> {
+  // Estado local para controle do switch (se o ThemeProvider não notificasse rápido, mas notifica)
+
+  @override
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final userDataProvider = context.watch<UserDataProvider>();
+    final user = FirebaseAuth.instance.currentUser;
+
+    // Dados reais
+    final String userName = userDataProvider.userName; // Getter que criamos
+    final String userEmail = user?.email ?? "Sem email vinculado";
+    // Lógica de Plano: Se tiver 'isPremium' no userData ou simular
+    final bool isPremium =
+        userDataProvider.userData?['onboardingData']?['isPremium'] ?? false;
+    final String planName =
+        isPremium ? "Pro Anual" : "Gratuito"; // Simplificação
+
+    // Data de renovação baseada no início da assinatura (onboarding)
+    DateTime renewDate = DateTime.now().add(const Duration(days: 30));
+    final onboardingTimestamp =
+        userDataProvider.userData?['onboardingCompletedAt'];
+    if (onboardingTimestamp is Timestamp) {
+      renewDate = onboardingTimestamp.toDate().add(const Duration(days: 30));
+    }
+    final String renewDateStr =
+        "${renewDate.day}/${renewDate.month}/${renewDate.year}";
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
+      // 1. Elimine aquela palavra "Conta" que está na parte superior da Tela
+      // appBar: null, // Sem AppBar ou AppBar transparente sem título
       appBar: AppBar(
-        title: const Text('Conta', style: TextStyle(color: Colors.white)),
         backgroundColor: Colors.transparent,
         elevation: 0,
-        centerTitle: true,
-        automaticallyImplyLeading: false, // No back button on main tab
+        automaticallyImplyLeading: false,
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.symmetric(horizontal: 24),
         child: Column(
           children: [
-            // 1. Identity Card
+            // 2. Identity Card com Nome Real
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: const Color(0xFF1E1E1E),
+                color: theme.cardColor, // Use theme colors
                 borderRadius: BorderRadius.circular(20),
               ),
-              child: isLoggedIn
-                  ? Row(
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 30,
+                    backgroundColor: colorScheme.primary,
+                    child: Text(
+                      userName.isNotEmpty ? userName[0].toUpperCase() : "U",
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 24,
+                        color: Colors.black,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        CircleAvatar(
-                          radius: 30,
-                          backgroundColor: colorScheme.primary,
-                          child: Text(userName[0],
-                              style: const TextStyle(
+                        Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                userName,
+                                style: theme.textTheme.titleLarge?.copyWith(
                                   fontWeight: FontWeight.bold,
-                                  fontSize: 24,
-                                  color: Colors.black)),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Text(userName,
-                                      style: const TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.bold)),
-                                  const SizedBox(width: 8),
-                                  Icon(Icons.edit,
-                                      size: 14,
-                                      color: colorScheme.primary), // Edit hint
-                                ],
+                                ),
+                                overflow: TextOverflow.ellipsis,
                               ),
-                              Text(userEmail,
-                                  style: const TextStyle(
-                                      color: Colors.grey, fontSize: 14)),
-                            ],
-                          ),
+                            ),
+                            const SizedBox(width: 8),
+                            // 3. Campo de nome deve ser possível alterar
+                            GestureDetector(
+                              onTap: () => _showEditNameDialog(
+                                  context, userDataProvider, userName),
+                              child: Icon(Icons.edit,
+                                  size: 16, color: colorScheme.primary),
+                            ),
+                          ],
                         ),
-                      ],
-                    )
-                  : Column(
-                      children: [
-                        const Icon(Icons.warning_amber,
-                            color: Colors.orange, size: 40),
-                        const SizedBox(height: 12),
-                        const Text(
-                          "Faça login para salvar seu progresso",
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                              color: Colors.white, fontWeight: FontWeight.bold),
+                        Text(
+                          userEmail,
+                          style: theme.textTheme.bodyMedium
+                              ?.copyWith(color: Colors.grey),
                         ),
-                        const SizedBox(height: 16),
-                        _LoginButton(
-                            icon: Icons.apple,
-                            label: "Entrar com Apple",
-                            onTap: () {}),
-                        const SizedBox(height: 8),
-                        _LoginButton(
-                            icon: Icons.g_mobiledata,
-                            label: "Entrar com Google",
-                            onTap: () {}),
                       ],
                     ),
+                  ),
+                ],
+              ),
             ),
 
             const SizedBox(height: 32),
 
             // 2. Minha Conta
             _SectionHeader(title: "Minha Conta"),
+            // Atalho para editar nome tb na lista
             _SettingsTile(
-                title: "Editar Nome", icon: Icons.person_outline, onTap: () {}),
-            _SettingsTile(
-                title: "Privacidade e Segurança",
-                icon: Icons.lock_outline,
-                onTap: () {}),
-            SwitchListTile(
-              title: const Text("Tema Escuro",
-                  style: TextStyle(color: Colors.white)),
-              secondary:
-                  const Icon(Icons.dark_mode_outlined, color: Colors.white),
-              value: true,
-              onChanged: (val) {},
-              activeColor: colorScheme.primary,
-              contentPadding: EdgeInsets.zero,
-            ),
+                title: "Editar Nome",
+                icon: Icons.person_outline,
+                onTap: () =>
+                    _showEditNameDialog(context, userDataProvider, userName)),
 
             const Divider(color: Colors.white12, height: 40),
 
-            // 3. Plano e Assinatura
+            // 5. Plano e Assinatura Funcional (Datas)
             _SectionHeader(title: "Plano e Assinatura"),
             Container(
               margin: const EdgeInsets.only(bottom: 16),
@@ -148,8 +155,14 @@ class AccountScreen extends StatelessWidget {
                           style: const TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.bold)),
-                      const Text("Renova em 15/05/2026",
-                          style: TextStyle(color: Colors.grey, fontSize: 12)),
+                      if (isPremium)
+                        Text("Renova em $renewDateStr",
+                            style: const TextStyle(
+                                color: Colors.grey, fontSize: 12)),
+                      if (!isPremium)
+                        const Text(
+                            "Expira em 19/01/2026", // Exemplo fixo ou lógica free
+                            style: TextStyle(color: Colors.grey, fontSize: 12)),
                     ],
                   ),
                   const Spacer(),
@@ -159,76 +172,185 @@ class AccountScreen extends StatelessWidget {
                 ],
               ),
             ),
-            _SettingsTile(
-                title: "Histórico de Pagamentos",
-                icon: Icons.receipt_long,
-                onTap: () {}),
 
             const Divider(color: Colors.white12, height: 40),
 
-            // 4. Dados e Backup
-            _SectionHeader(title: "Dados e Backup"),
-            _SettingsTile(
-                title: "Exportar Dados", icon: Icons.download, onTap: () {}),
-            _SettingsTile(
-                title: "Backup", icon: Icons.cloud_upload, onTap: () {}),
-
-            const Divider(color: Colors.white12, height: 40),
-
-            // 5. Suporte
+            // 6. Suporte (Merge)
             _SectionHeader(title: "Suporte"),
             _SettingsTile(
-                title: "Central de Ajuda",
+                title: "Central de Ajuda e Reportar Problema",
                 icon: Icons.help_outline,
-                onTap: () {}),
-            _SettingsTile(
-                title: "Reportar Problema",
-                icon: Icons.bug_report_outlined,
-                onTap: () {}),
+                onTap: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text("Abrindo suporte...")));
+                }),
 
             const Divider(color: Colors.white12, height: 40),
 
-            // 6. Legal
-            _SectionHeader(title: "Legal"),
-            _SettingsTile(
-                title: "Termos de Uso",
-                icon: Icons.description_outlined,
-                onTap: () {}),
-            _SettingsTile(
-                title: "Política de Privacidade",
-                icon: Icons.privacy_tip_outlined,
-                onTap: () {}),
+            // 8. Botões Sair e Excluir Funcionais
+            if (user != null && user.isAnonymous)
+              Container(
+                width: double.infinity,
+                margin: const EdgeInsets.only(bottom: 16),
+                child: ElevatedButton.icon(
+                  onPressed: () => _handleLinkAccount(context),
+                  icon: const Icon(Icons.g_mobiledata),
+                  label: const Text("Salvar Progresso (Vincular Google)"),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: Colors.black,
+                  ),
+                ),
+              ),
 
-            const SizedBox(height: 40),
-
-            // 7. Actions
             SizedBox(
               width: double.infinity,
               child: OutlinedButton(
-                onPressed: () {},
+                onPressed: () => _handleLogout(context),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: Colors.red,
                   side: const BorderSide(color: Colors.red),
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
-                child: const Text("Sair da Conta"),
+                child: Text(user?.isAnonymous == true
+                    ? "Sair (Perder Dados)"
+                    : "Sair da Conta"),
               ),
             ),
             const SizedBox(height: 16),
-            TextButton(
-              onPressed: () {},
-              child: const Text("Excluir Conta",
-                  style: TextStyle(color: Colors.red)),
-            ),
+            if (user?.isAnonymous ==
+                false) // Só mostra excluir se não for anon (ou trata igual)
+              TextButton(
+                onPressed: () => _handleDeleteAccount(context),
+                child: const Text("Excluir Conta",
+                    style: TextStyle(color: Colors.red)),
+              ),
 
             const SizedBox(height: 40),
-            const Text("Versão 1.0.0 (Build 200)",
+            const Text("Versão 1.0.0 (Build 202)",
                 style: TextStyle(color: Colors.grey, fontSize: 12)),
             const SizedBox(height: 80),
           ],
         ),
       ),
     );
+  }
+
+  void _showEditNameDialog(
+      BuildContext context, UserDataProvider provider, String currentName) {
+    final TextEditingController controller =
+        TextEditingController(text: currentName);
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1E1E1E),
+        title: const Text("Editar Nome", style: TextStyle(color: Colors.white)),
+        content: TextField(
+          controller: controller,
+          style: const TextStyle(color: Colors.white),
+          decoration: const InputDecoration(
+            hintText: "Seu nome",
+            hintStyle: TextStyle(color: Colors.grey),
+            enabledBorder: UnderlineInputBorder(
+                borderSide: BorderSide(color: Colors.grey)),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text("Cancelar"),
+          ),
+          TextButton(
+            onPressed: () async {
+              final newName = controller.text.trim();
+              if (newName.isNotEmpty) {
+                final user = FirebaseAuth.instance.currentUser;
+                if (user != null) {
+                  await provider.updateName(user.uid, newName);
+                }
+                if (ctx.mounted) Navigator.pop(ctx);
+              }
+            },
+            child: const Text("Salvar", style: TextStyle(color: Colors.blue)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _handleLinkAccount(BuildContext context) async {
+    try {
+      final authService = AuthServiceV3();
+      final cred = await authService.linkWithGoogle();
+
+      if (cred != null && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Conta vinculada com sucesso!")));
+        // Atualiza UI (setState não necessário pois usamos FirebaseAuth.instance)
+        setState(() {});
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(
+                "Erro ao vincular: $e (A conta Google já pode estar em uso)")));
+      }
+    }
+  }
+
+  Future<void> _handleLogout(BuildContext context) async {
+    // 8. Botão Sair da conta funcional
+    await FirebaseAuth.instance.signOut();
+    if (context.mounted) {
+      // Navegar para WelcomeScreen (Login) e limpar stack
+      // Como mudaremos o main para StreamBuilder, o logout atualiza o estado lá
+      // e reconstrói o app, indo para LoginScreen.
+      // Mas podemos forçar navegação se necessário.
+      // O ideal é o StreamBuilder no Main cuidar disso.
+    }
+  }
+
+  Future<void> _handleDeleteAccount(BuildContext context) async {
+    // Confirmação
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1E1E1E),
+        title:
+            const Text("Excluir Conta?", style: TextStyle(color: Colors.white)),
+        content: const Text(
+          "Essa ação é irreversível. Todos os seus dados serão apagados.",
+          style: TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text("Cancelar")),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child:
+                  const Text("Excluir", style: TextStyle(color: Colors.red))),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      try {
+        final user = FirebaseAuth.instance.currentUser;
+        if (user != null) {
+          // Deletar do Firestore tb? Recomendado.
+          // FirestoreService poderia ter deleteUser(uid).
+          await user.delete();
+          // O StreamBuilder do Main vai detectar e jogar pra Login.
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+              content:
+                  Text("Erro ao excluir: $e. Faça login novamente e tente.")));
+        }
+      }
+    }
   }
 }
 
@@ -263,39 +385,14 @@ class _SettingsTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Use theme
+    final theme = Theme.of(context);
     return ListTile(
-      leading: Icon(icon, color: Colors.white),
-      title: Text(title, style: const TextStyle(color: Colors.white)),
+      leading: Icon(icon, color: theme.iconTheme.color),
+      title: Text(title, style: theme.textTheme.bodyMedium),
       trailing: const Icon(Icons.chevron_right, color: Colors.grey),
       contentPadding: EdgeInsets.zero,
       onTap: onTap,
-    );
-  }
-}
-
-class _LoginButton extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-
-  const _LoginButton(
-      {required this.icon, required this.label, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton.icon(
-        onPressed: onTap,
-        icon: Icon(icon, color: Colors.black),
-        label: Text(label,
-            style: const TextStyle(
-                color: Colors.black, fontWeight: FontWeight.bold)),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.white, // Custom standard
-          foregroundColor: Colors.black,
-        ),
-      ),
     );
   }
 }

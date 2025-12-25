@@ -7,7 +7,7 @@ import '../../../../core/services/analytics_service.dart';
 import '../../../../core/services/haptic_service.dart';
 import '../../application/onboarding_provider.dart';
 import '../widgets/premium_progress_bar.dart';
-import 'objective_screen.dart';
+import 'current_physique_screen.dart';
 import '../widgets/premium_selection_card.dart';
 import '../widgets/procs_back_button.dart';
 
@@ -31,7 +31,7 @@ class _VitalDataScreenState extends State<VitalDataScreen> {
   void _navigateToNext() {
     HapticService.mediumImpact();
     Navigator.of(context).push(
-      MaterialPageRoute(builder: (context) => const ObjectiveScreen()),
+      MaterialPageRoute(builder: (context) => const CurrentPhysiqueScreen()),
     );
   }
 
@@ -42,6 +42,8 @@ class _VitalDataScreenState extends State<VitalDataScreen> {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
+      isScrollControlled:
+          true, // Responsividade: Permite que o modal cresça/scroll
       builder: (context) => const _GenderPickerModal(),
     );
   }
@@ -58,6 +60,7 @@ class _VitalDataScreenState extends State<VitalDataScreen> {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
+      isScrollControlled: true, // Responsividade
       builder: (context) => _ValuePickerModal(
         title: title,
         min: min,
@@ -76,6 +79,12 @@ class _VitalDataScreenState extends State<VitalDataScreen> {
     final provider = context.watch<OnboardingProvider>();
     final data = provider.data;
 
+    // V3.5: Validação (Só ativa se tudo estiver preenchido)
+    final bool isValid = data.gender != null &&
+        data.age != null &&
+        data.height != null &&
+        data.currentWeight != null;
+
     return Scaffold(
       body: SafeArea(
         child: Column(
@@ -88,7 +97,7 @@ class _VitalDataScreenState extends State<VitalDataScreen> {
                   const ProcsBackButton(),
                   const SizedBox(width: 16),
                   const Expanded(
-                    child: PremiumProgressBar(progress: 0.1), // 1/5 aprox
+                    child: PremiumProgressBar(progress: 1 / 17), // 1/17
                   ),
                 ],
               ),
@@ -123,7 +132,7 @@ class _VitalDataScreenState extends State<VitalDataScreen> {
                   const Divider(height: 1),
                   _VitalDataItem(
                     label: "Idade",
-                    value: "${data.age ?? 25} anos",
+                    value: data.age != null ? "${data.age} anos" : "Selecione",
                     onTap: () => _showValuePicker(
                       title: "Qual sua idade?",
                       min: 12,
@@ -136,7 +145,8 @@ class _VitalDataScreenState extends State<VitalDataScreen> {
                   const Divider(height: 1),
                   _VitalDataItem(
                     label: "Altura",
-                    value: "${data.height ?? 170} cm",
+                    value:
+                        data.height != null ? "${data.height} cm" : "Selecione",
                     onTap: () => _showValuePicker(
                       title: "Qual sua altura?",
                       min: 100,
@@ -149,7 +159,9 @@ class _VitalDataScreenState extends State<VitalDataScreen> {
                   const Divider(height: 1),
                   _VitalDataItem(
                     label: "Peso",
-                    value: "${data.currentWeight?.round() ?? 70} kg",
+                    value: data.currentWeight != null
+                        ? "${data.currentWeight?.round()} kg"
+                        : "Selecione",
                     onTap: () => _showValuePicker(
                       title: "Qual seu peso?",
                       min: 30,
@@ -168,21 +180,24 @@ class _VitalDataScreenState extends State<VitalDataScreen> {
             // FOOTER BUTTON
             Padding(
               padding: const EdgeInsets.fromLTRB(32, 0, 32, 32),
-              child: SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: ElevatedButton(
-                  onPressed: _navigateToNext,
-                  style: ElevatedButton.styleFrom(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(minHeight: 56),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: isValid ? _navigateToNext : null,
+                    style: ElevatedButton.styleFrom(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 16),
                     ),
-                  ),
-                  child: const Text(
-                    "Continuar",
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
+                    child: const Text(
+                      "Continuar",
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ),
@@ -216,27 +231,35 @@ class _VitalDataItem extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 24.0),
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              label,
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w600,
+            Expanded(
+              child: Text(
+                label,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
+            const SizedBox(width: 16),
             Row(
+              mainAxisSize:
+                  MainAxisSize.min, // Ensure inner row doesn't force expansion
               children: [
-                Text(
-                  value,
-                  style: theme.textTheme.bodyLarge?.copyWith(
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                Flexible(
+                  // Use Flexible to allow value to wrap if needed, extremely unlikely but safe
+                  child: Text(
+                    value,
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      color: theme.colorScheme.onSurface.withOpacity(0.7),
+                    ),
+                    textAlign: TextAlign.end,
                   ),
                 ),
                 const SizedBox(width: 8),
                 Icon(
                   FontAwesomeIcons.chevronRight,
                   size: 16,
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                  color: theme.colorScheme.onSurface.withOpacity(0.5),
                 ),
               ],
             ),
@@ -247,49 +270,81 @@ class _VitalDataItem extends StatelessWidget {
   }
 }
 
-class _GenderPickerModal extends StatelessWidget {
+class _GenderPickerModal extends StatefulWidget {
   const _GenderPickerModal();
+
+  @override
+  State<_GenderPickerModal> createState() => _GenderPickerModalState();
+}
+
+class _GenderPickerModalState extends State<_GenderPickerModal> {
+  String? _selectedGender;
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize with current value
+    _selectedGender =
+        Provider.of<OnboardingProvider>(context, listen: false).data.gender;
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final provider = context.watch<OnboardingProvider>();
+    final provider = context.read<OnboardingProvider>();
 
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: theme.scaffoldBackgroundColor,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            "Selecione seu gênero",
-            style: theme.textTheme.titleLarge,
+    return SafeArea(
+      child: Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: theme.scaffoldBackgroundColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                "Selecione seu gênero",
+                style: theme.textTheme.titleLarge,
+              ),
+              const SizedBox(height: 24),
+              PremiumSelectionCard(
+                text: "Masculino",
+                isSelected: _selectedGender == "Masculino",
+                icon: FontAwesomeIcons.mars,
+                onTap: () {
+                  HapticService.selectionClick();
+                  setState(() => _selectedGender = "Masculino");
+                },
+              ),
+              const SizedBox(height: 16),
+              PremiumSelectionCard(
+                text: "Feminino",
+                isSelected: _selectedGender == "Feminino",
+                icon: FontAwesomeIcons.venus,
+                onTap: () {
+                  HapticService.selectionClick();
+                  setState(() => _selectedGender = "Feminino");
+                },
+              ),
+              const SizedBox(height: 32),
+              SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: ElevatedButton(
+                  onPressed: _selectedGender != null
+                      ? () {
+                          provider.setGender(_selectedGender!);
+                          Navigator.pop(context);
+                        }
+                      : null,
+                  child: const Text("Confirmar"),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 24),
-          PremiumSelectionCard(
-            text: "Masculino",
-            isSelected: provider.data.gender == "Masculino",
-            icon: FontAwesomeIcons.mars,
-            onTap: () {
-              provider.setGender("Masculino");
-              Navigator.pop(context);
-            },
-          ),
-          const SizedBox(height: 16),
-          PremiumSelectionCard(
-            text: "Feminino",
-            isSelected: provider.data.gender == "Feminino",
-            icon: FontAwesomeIcons.venus,
-            onTap: () {
-              provider.setGender("Feminino");
-              Navigator.pop(context);
-            },
-          ),
-          const SizedBox(height: 32),
-        ],
+        ),
       ),
     );
   }
@@ -339,62 +394,68 @@ class _ValuePickerModalState extends State<_ValuePickerModal> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Container(
-      height: 400,
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: theme.scaffoldBackgroundColor,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      child: Column(
-        children: [
-          Text(
-            widget.title,
-            style: theme.textTheme.titleLarge,
-          ),
-          const SizedBox(height: 24),
-          Expanded(
-            child: CupertinoPicker.builder(
-              scrollController: _controller,
-              itemExtent: 50,
-              onSelectedItemChanged: (index) {
-                HapticService.selectionClick();
-                setState(() {
-                  _selectedValue = widget.min + index;
-                });
-              },
-              childCount: widget.max - widget.min + 1,
-              itemBuilder: (context, index) {
-                final value = widget.min + index;
-                final isSelected = value == _selectedValue;
-                return Center(
-                  child: Text(
-                    "$value${widget.suffix}",
-                    style: theme.textTheme.headlineMedium?.copyWith(
-                      color: isSelected
-                          ? theme.colorScheme.primary
-                          : theme.colorScheme.onSurface.withValues(alpha: 0.5),
-                      fontWeight:
-                          isSelected ? FontWeight.bold : FontWeight.normal,
+    final mediaQuery = MediaQuery.of(context);
+    // Altura máxima de 400 ou 50% da tela, o que for menor (para evitar overflow em landscape/telas pequenas)
+    final double height = 400.0.clamp(200.0, mediaQuery.size.height * 0.8);
+
+    return SafeArea(
+      child: Container(
+        height: height,
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: theme.scaffoldBackgroundColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          children: [
+            Text(
+              widget.title,
+              style: theme.textTheme.titleLarge,
+            ),
+            const SizedBox(height: 24),
+            Expanded(
+              child: CupertinoPicker.builder(
+                scrollController: _controller,
+                itemExtent: 50,
+                onSelectedItemChanged: (index) {
+                  HapticService.selectionClick();
+                  setState(() {
+                    _selectedValue = widget.min + index;
+                  });
+                },
+                childCount: widget.max - widget.min + 1,
+                itemBuilder: (context, index) {
+                  final value = widget.min + index;
+                  final isSelected = value == _selectedValue;
+                  return Center(
+                    child: Text(
+                      "$value${widget.suffix}",
+                      style: theme.textTheme.headlineMedium?.copyWith(
+                        color: isSelected
+                            ? theme.colorScheme.primary
+                            : theme.colorScheme.onSurface.withOpacity(0.5),
+                        fontWeight:
+                            isSelected ? FontWeight.bold : FontWeight.normal,
+                      ),
                     ),
-                  ),
-                );
-              },
+                  );
+                },
+              ),
             ),
-          ),
-          const SizedBox(height: 24),
-          SizedBox(
-            width: double.infinity,
-            height: 56,
-            child: ElevatedButton(
-              onPressed: () {
-                widget.onSave(_selectedValue);
-                Navigator.pop(context);
-              },
-              child: const Text("Confirmar"),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              height: 56,
+              child: ElevatedButton(
+                onPressed: () {
+                  widget.onSave(_selectedValue);
+                  Navigator.pop(context);
+                },
+                child: const Text("Confirmar"),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

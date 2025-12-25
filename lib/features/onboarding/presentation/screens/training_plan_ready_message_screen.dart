@@ -3,8 +3,9 @@ import 'package:flutter/material.dart';
 // import 'package:flutter/services.dart'; // Removed unused import
 // import 'package:provider/provider.dart';
 // import '../../application/onboarding_provider.dart';
-import 'diet_restrictions_screen.dart'; // Próxima tela
+import 'diet_restrictions_screen.dart'; // Próxima tela (ajustar conforme fluxo real)
 import '../../../../core/services/haptic_service.dart';
+import '../../../../core/widgets/gravity_background.dart';
 
 class TrainingPlanReadyMessageScreen extends StatefulWidget {
   const TrainingPlanReadyMessageScreen({super.key});
@@ -139,87 +140,76 @@ class _TrainingPlanReadyMessageScreenState
     );
 
     return Scaffold(
-      backgroundColor: Colors.black,
-      body: Stack(
-        children: [
-          Container(
-            decoration: const BoxDecoration(
-              image: DecorationImage(
-                image: AssetImage('assets/images/background_premium.png'),
-                fit: BoxFit.cover,
-                opacity: 0.6,
-              ),
-            ),
-          ),
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 32.0),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const Spacer(flex: 2),
-                  AnimatedOpacity(
-                    opacity: _textOpacity,
-                    duration: _fadeDuration,
-                    child: SizedBox(
-                      height: 200,
-                      child: Center(
-                        child: RichText(
-                          textAlign: TextAlign.center,
-                          text: TextSpan(
-                            children: [
-                              TextSpan(
-                                text: _displayedText,
-                                style: messageStyle,
-                              ),
-                              if (_isTyping && _textOpacity > 0)
-                                WidgetSpan(
-                                  alignment: PlaceholderAlignment.middle,
-                                  child: Transform.translate(
-                                    offset: const Offset(2, 0),
-                                    child: FadeTransition(
-                                      opacity: _cursorController,
-                                      child: Container(
-                                        width: 2,
-                                        height: 24,
-                                        color: theme.colorScheme.primary,
-                                      ),
+      // backgroundColor: Colors.black, // Removido pois GravityBackground gerencia o fundo
+      body: GravityBackground(
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 32.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Spacer(flex: 2),
+                AnimatedOpacity(
+                  opacity: _textOpacity,
+                  duration: _fadeDuration,
+                  child: SizedBox(
+                    height: 200,
+                    child: Center(
+                      child: RichText(
+                        textAlign: TextAlign.center,
+                        text: TextSpan(
+                          children: [
+                            TextSpan(
+                              text: _displayedText,
+                              style: messageStyle,
+                            ),
+                            if (_isTyping && _textOpacity > 0)
+                              WidgetSpan(
+                                alignment: PlaceholderAlignment.middle,
+                                child: Transform.translate(
+                                  offset: const Offset(2, 0),
+                                  child: FadeTransition(
+                                    opacity: _cursorController,
+                                    child: Container(
+                                      width: 2,
+                                      height: 24,
+                                      color: theme.colorScheme.primary,
                                     ),
                                   ),
                                 ),
-                            ],
+                              ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const Spacer(flex: 2),
+                AnimatedOpacity(
+                  opacity: _showButton ? 1.0 : 0.0,
+                  duration: const Duration(milliseconds: 800),
+                  child: IgnorePointer(
+                    ignoring: !_showButton,
+                    child: Padding(
+                      padding: const EdgeInsets.only(bottom: 40.0),
+                      child: ElevatedButton(
+                        onPressed: _onNext,
+                        child: const Text(
+                          "CONTINUAR",
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1.0,
                           ),
                         ),
                       ),
                     ),
                   ),
-                  const Spacer(flex: 2),
-                  AnimatedOpacity(
-                    opacity: _showButton ? 1.0 : 0.0,
-                    duration: const Duration(milliseconds: 800),
-                    child: IgnorePointer(
-                      ignoring: !_showButton,
-                      child: Padding(
-                        padding: const EdgeInsets.only(bottom: 40.0),
-                        child: ElevatedButton(
-                          onPressed: _onNext,
-                          child: const Text(
-                            "CONTINUAR",
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 1.0,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }

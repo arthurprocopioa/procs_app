@@ -5,6 +5,7 @@ import 'notifications_screen.dart'; // Próxima tela
 import '../../../../core/services/analytics_service.dart';
 import '../../../../core/services/haptic_service.dart';
 import '../../application/onboarding_provider.dart';
+import '../../../../core/widgets/gravity_background.dart';
 
 class ResultReadyScreen extends StatefulWidget {
   const ResultReadyScreen({super.key});
@@ -164,116 +165,108 @@ class _ResultReadyScreenState extends State<ResultReadyScreen>
     );
 
     return Scaffold(
-      backgroundColor: Colors.black,
-      body: Stack(
-        children: [
-          // BACKGROUND IMAGE
-          Container(
-            decoration: const BoxDecoration(
-              image: DecorationImage(
-                image: AssetImage('assets/images/background_premium.png'),
-                fit: BoxFit.cover,
-                opacity: 0.6, // Ajuste de opacidade para legibilidade
-              ),
-            ),
-          ),
+      // backgroundColor: Colors.black,
+      body: GravityBackground(
+        child: Stack(
+          children: [
+            // CONTENT
+            SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 32.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const Spacer(flex: 2),
 
-          // CONTENT
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 32.0),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const Spacer(flex: 2),
-
-                  // 2. ÁREA DE TEXTO DIGITADO (Typewriter)
-                  if (!_showChecklist)
-                    AnimatedOpacity(
-                      opacity: _textOpacity,
-                      duration: _fadeDuration,
-                      child: SizedBox(
-                        height: 200,
-                        child: Center(
-                          child: RichText(
-                            textAlign: TextAlign.center,
-                            text: TextSpan(
-                              children: [
-                                TextSpan(
-                                    text: _displayedText, style: messageStyle),
-                                if (_isTyping && _textOpacity > 0)
-                                  WidgetSpan(
-                                    alignment: PlaceholderAlignment.middle,
-                                    child: Transform.translate(
-                                      offset: const Offset(2, 0),
-                                      child: FadeTransition(
-                                        opacity: _cursorController,
-                                        child: Container(
-                                          width: 2,
-                                          height: 24,
-                                          color: theme.colorScheme.primary,
+                    // 2. ÁREA DE TEXTO DIGITADO (Typewriter)
+                    if (!_showChecklist)
+                      AnimatedOpacity(
+                        opacity: _textOpacity,
+                        duration: _fadeDuration,
+                        child: SizedBox(
+                          height: 200,
+                          child: Center(
+                            child: RichText(
+                              textAlign: TextAlign.center,
+                              text: TextSpan(
+                                children: [
+                                  TextSpan(
+                                      text: _displayedText,
+                                      style: messageStyle),
+                                  if (_isTyping && _textOpacity > 0)
+                                    WidgetSpan(
+                                      alignment: PlaceholderAlignment.middle,
+                                      child: Transform.translate(
+                                        offset: const Offset(2, 0),
+                                        child: FadeTransition(
+                                          opacity: _cursorController,
+                                          child: Container(
+                                            width: 2,
+                                            height: 24,
+                                            color: theme.colorScheme.primary,
+                                          ),
                                         ),
                                       ),
                                     ),
-                                  ),
-                              ],
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+
+                    // 3. CHECKLIST ANIMADA (Aparece no meio do roteiro)
+                    if (_showChecklist)
+                      AnimatedOpacity(
+                        opacity: _showChecklist ? 1.0 : 0.0,
+                        duration: const Duration(milliseconds: 500),
+                        child: SizedBox(
+                          height: 250, // Altura fixa para a checklist
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              _buildCheckItem(
+                                  theme, "Estratégia de Treino: Definida.", 0),
+                              const SizedBox(height: 24),
+                              _buildCheckItem(
+                                  theme, "Metas de Nutrição: Calculadas.", 1),
+                              const SizedBox(height: 24),
+                              _buildCheckItem(
+                                  theme, "Variações de Exercício: Prontas.", 2),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                    const Spacer(flex: 2),
+
+                    // 4. BOTÃO FINAL
+                    AnimatedOpacity(
+                      opacity: _showButton ? 1.0 : 0.0,
+                      duration: const Duration(milliseconds: 800),
+                      child: IgnorePointer(
+                        ignoring: !_showButton,
+                        child: Padding(
+                          padding: const EdgeInsets.only(bottom: 40.0),
+                          child: ElevatedButton(
+                            onPressed: _onNext,
+                            child: const Text(
+                              "VAMOS LÁ",
+                              style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 1.0),
                             ),
                           ),
                         ),
                       ),
                     ),
-
-                  // 3. CHECKLIST ANIMADA (Aparece no meio do roteiro)
-                  if (_showChecklist)
-                    AnimatedOpacity(
-                      opacity: _showChecklist ? 1.0 : 0.0,
-                      duration: const Duration(milliseconds: 500),
-                      child: SizedBox(
-                        height: 250, // Altura fixa para a checklist
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            _buildCheckItem(
-                                theme, "Estratégia de Treino: Definida.", 0),
-                            const SizedBox(height: 24),
-                            _buildCheckItem(
-                                theme, "Metas de Nutrição: Calculadas.", 1),
-                            const SizedBox(height: 24),
-                            _buildCheckItem(
-                                theme, "Variações de Exercício: Prontas.", 2),
-                          ],
-                        ),
-                      ),
-                    ),
-
-                  const Spacer(flex: 2),
-
-                  // 4. BOTÃO FINAL
-                  AnimatedOpacity(
-                    opacity: _showButton ? 1.0 : 0.0,
-                    duration: const Duration(milliseconds: 800),
-                    child: IgnorePointer(
-                      ignoring: !_showButton,
-                      child: Padding(
-                        padding: const EdgeInsets.only(bottom: 40.0),
-                        child: ElevatedButton(
-                          onPressed: _onNext,
-                          child: const Text(
-                            "VAMOS LÁ",
-                            style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 1.0),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

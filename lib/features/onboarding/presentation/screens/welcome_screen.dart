@@ -3,9 +3,15 @@ import 'package:provider/provider.dart';
 // V3.1.8: FontAwesome não é mais necessário
 // import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
+import 'package:firebase_auth/firebase_auth.dart'; // Auth
 import '../../../../core/services/analytics_service.dart';
 import '../../../../core/services/haptic_service.dart'; // Import HapticService
+import '../../../../core/services/auth_service.dart'; // Auth
+import '../../../../core/services/firestore_service.dart'; // FirestoreService
+import 'package:cloud_firestore/cloud_firestore.dart'; // Firestore
+import '../../../../core/providers/user_data_provider.dart'; // Import UserDataProvider
 import 'terms_screen.dart';
+import '../../../../core/widgets/gravity_background.dart';
 
 class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({super.key});
@@ -27,8 +33,13 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   // ---
   // V3.1.7 (LÓGICA "GUEST-PRIMEIRO") - (INTOCADA)
   // ---
+  // ---
+  // LÓGICA LOGIN: Google -> Checar Firestore -> Navegar
+  // ---
+  // ---
+  // LÓGICA V3 PURE: START = GUEST AUTH AUTOMÁTICO
+  // ---
   Future<void> _onStart(BuildContext context) async {
-    // V3: Haptics refatorado para usar o HapticService
     final analytics = context.read<AnalyticsService>();
     await HapticService.mediumImpact();
 
@@ -36,6 +47,19 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
       'onboarding_start_guest',
       parameters: {'login_method': 'guest'},
     );
+
+    // V3: Autenticação Anônima SILENCIOSA agora mesmo.
+    // Isso garante que temos um UID para salvar os dados do onboarding desde o passo 1.
+    try {
+      final auth = FirebaseAuth.instance;
+      if (auth.currentUser == null) {
+        await auth.signInAnonymously();
+      }
+    } catch (e) {
+      debugPrint("Erro ao criar usuário anônimo: $e");
+      // Mesmo com erro, deixamos prosseguir, o checkout tentará novamente.
+    }
+
     if (!context.mounted) return;
     Navigator.of(context).push(
       MaterialPageRoute(
@@ -44,29 +68,24 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     );
   }
 
-  // ---
-  // V3.1.7 (LÓGICA "JÁ TENHO CONTA") - (INTOCADA)
-  // ---
   Future<void> _onLogin(BuildContext context) async {
-    // V3: Haptics refatorado para usar o HapticService
+    // Fluxo "Já Tenho Conta" (Login explícito com Google)
     final analytics = context.read<AnalyticsService>();
     await HapticService.mediumImpact();
 
-    analytics.trackEvent(
-      'onboarding_login_attempt',
-      parameters: {'login_method': 'login_button_stub'},
-    );
+    analytics.trackEvent('onboarding_login_attempt',
+        parameters: {'method': 'google'});
 
-    if (!context.mounted) return;
+    final authService = AuthServiceV3();
+    final userCredential = await authService.signInWithGoogle();
 
-    // Handoff V3.1.7: Lógica (AuthServiceV3) não implementada
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Fluxo "Já tenho conta" (V3.1.7) não implementado.'),
-        backgroundColor: Colors.grey,
-      ),
-    );
-    // TODO (V3.1.7): Implementar fluxo de login pós-pagamento
+    if (userCredential != null && context.mounted) {
+      // Sucesso -> Home
+      // Importante: Iniciar o carregamento dos dados do usuário logado!
+      context.read<UserDataProvider>().listenToUser(userCredential.user!.uid);
+
+      Navigator.of(context).pushNamedAndRemoveUntil('/home', (route) => false);
+    }
   }
 
   @override
@@ -76,8 +95,9 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
 
     return Scaffold(
       // CRÍTICA 1: Força o fundo preto puro para mesclar com a imagem.
-      backgroundColor: Colors.black,
-      body: SafeArea(
+      // backgroundColor: Colors.black,
+      body: GravityBackground(
+        child: SafeArea(
         bottom: false, // Permite que os botões fiquem na borda inferior
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24.0),
@@ -137,17 +157,16 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
               ElevatedButton(
                 onPressed: () => _onLogin(context),
                 style: ElevatedButton.styleFrom(
-                  // CRÍTICA 5: Usa a cor de container/fundo secundário
-                  // definida no seu app_theme.dart (#1E1E1E)
                   backgroundColor: theme.colorScheme.surfaceContainer,
                   foregroundColor: theme.colorScheme.onSurface,
                 ),
                 child: const Text('Já tenho conta'),
               ),
-              // V3: Aumenta o padding inferior para corresponder à referência
+
               const SizedBox(height: 32),
             ],
           ),
+        ),
         ),
       ),
     );

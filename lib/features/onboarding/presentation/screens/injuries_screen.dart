@@ -44,7 +44,8 @@ class _InjuriesScreenState extends State<InjuriesScreen> {
     // Ideal: Alterar o Model para bool? hasInjury.
 
     _hasInjury =
-        providerData.hasInjury; // Se isso é false, aparece selecionado.
+        providerData.hasInjury; // Se isso é null ou false, ajusta corretamente.
+    _injuryController = TextEditingController(text: providerData.injuryDetails);
 
     // SE O USER PEDIU PARA NÃO VIR MARCADO, O PROVIDER ESTÁ TRAZENDO 'FALSE'.
     // VOU SETAR COMO NULL INCONDICIONALMENTE NO INIT? NÃO, POIS PERDE O VOLTAR.

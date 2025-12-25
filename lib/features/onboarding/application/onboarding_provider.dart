@@ -54,6 +54,12 @@ class OnboardingProvider extends ChangeNotifier {
   }
 
   // --- Módulo 2.2 ---
+  void setCurrentPhysique(String physique) {
+    if (_data.currentPhysique == physique) return;
+    _data = _data.copyWith(currentPhysique: physique);
+    notifyListeners();
+  }
+
   void setObjective(String objective) {
     if (_data.objective == objective) return;
     _data = _data.copyWith(objective: objective);
@@ -320,6 +326,45 @@ class OnboardingProvider extends ChangeNotifier {
   void setUserRegion(String? region) {
     if (_data.userRegion == region) return;
     _data = _data.copyWith(userRegion: region);
+    notifyListeners();
+  }
+
+  // NOVO: Gestão de Suplementos
+  void toggleSupplement(String key) {
+    final newSupplements = Set<String>.from(_data.selectedSupplements);
+    if (key == 'none') {
+      // Se marcar "Nenhum", limpa tudo
+      if (newSupplements.contains('none')) {
+        newSupplements.remove('none');
+      } else {
+        newSupplements.clear();
+        newSupplements.add('none');
+      }
+      setOtherSupplements(null); // Limpa também o campo "outros"
+    } else {
+      // Se marcar outro, remove "Nenhum"
+      newSupplements.remove('none');
+      if (newSupplements.contains(key)) {
+        newSupplements.remove(key);
+      } else {
+        newSupplements.add(key);
+      }
+    }
+    _data = _data.copyWith(selectedSupplements: newSupplements);
+    notifyListeners();
+  }
+
+  void setOtherSupplements(String? text) {
+    if (_data.otherSupplements == text) return;
+
+    // Se digitou algo em outros, garante que 'none' não esteja marcado
+    if (text != null && text.isNotEmpty) {
+      final newSupplements = Set<String>.from(_data.selectedSupplements);
+      newSupplements.remove('none');
+      _data = _data.copyWith(selectedSupplements: newSupplements);
+    }
+
+    _data = _data.copyWith(otherSupplements: text);
     notifyListeners();
   }
 

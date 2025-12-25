@@ -1,19 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-// Importa a nova tela de localização do usuário
 import 'user_location_screen.dart';
-// ---
-// IMPORTS V3 (Fundação)
-// ---
 import '../../../../core/services/analytics_service.dart';
 import '../../../../core/services/haptic_service.dart';
 import '../../application/onboarding_provider.dart';
-// V3 (NOVOS IMPORTS): Widgets reutilizáveis
 import '../widgets/premium_progress_bar.dart';
 import '../widgets/premium_selection_card.dart';
 import '../widgets/procs_back_button.dart';
 
-/// Tela 1.17: O usuário informa interesse em suplementação (Passo 14/15).
 class SupplementsScreen extends StatefulWidget {
   const SupplementsScreen({super.key});
 
@@ -22,31 +16,62 @@ class SupplementsScreen extends StatefulWidget {
 }
 
 class _SupplementsScreenState extends State<SupplementsScreen> {
+  final Map<String, String> _supplementOptions = {
+    'whey': 'Whey Protein',
+    'creatina': 'Creatina',
+    'pre_treino': 'Pré-treino',
+    'multivitaminico': 'Multivitamínico',
+    'hipercalorico': 'Hipercalórico',
+  };
+
+  late final TextEditingController _otherController;
+  final FocusNode _otherFocusNode = FocusNode();
+
   @override
   void initState() {
     super.initState();
-    // V3: Analytics
+    final initialOther =
+        context.read<OnboardingProvider>().data.otherSupplements;
+    _otherController = TextEditingController(text: initialOther ?? '');
+
+    // Listener to update UI when text changes (for validation button)
+    _otherController.addListener(() => setState(() {}));
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<AnalyticsService>(context, listen: false)
-          .trackScreenView('supplements');
+          .trackScreenView('supplements_selection');
     });
   }
 
-  /// V3: Ação de 'Finalizar'
-  void _onNext() {
-    // O valor já está salvo no Provider via onTap dos cards.
-    final provider = context.read<OnboardingProvider>();
+  @override
+  void dispose() {
+    _otherController.dispose();
+    _otherFocusNode.dispose();
+    super.dispose();
+  }
 
-    // V3: Haptics (Impacto pesado para indicar o fim de uma fase)
+  void _onNext() {
+    FocusScope.of(context).unfocus();
     HapticService.heavyImpact();
 
-    // V3: Analytics
+    final provider = context.read<OnboardingProvider>();
+    final data = provider.data;
+
+    // Save text field content if "outros" was selected
+    if (data.selectedSupplements.contains('outros')) {
+      provider.setOtherSupplements(_otherController.text.trim());
+    } else {
+      provider.setOtherSupplements(null);
+    }
+
     context.read<AnalyticsService>().trackEvent(
       'onboarding_supplements_set',
-      parameters: {'interest': provider.data.interestInSupplements},
+      parameters: {
+        'selected': data.selectedSupplements.toList().join(','),
+        'other': _otherController.text,
+      },
     );
 
-    // V3: Navegação CORRIGIDA para a NOVA TELA (User Location, 15/15)
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => const UserLocationScreen(),
@@ -59,18 +84,32 @@ class _SupplementsScreenState extends State<SupplementsScreen> {
     final theme = Theme.of(context);
     final textTheme = theme.textTheme;
     final provider = context.watch<OnboardingProvider>();
-    final selectedInterest = provider.data.interestInSupplements;
+    final data = provider.data;
+
+    final bool showOtherTextField = data.selectedSupplements.contains('outros');
+
+    // Validation: Must have at least one selection OR text is not empty if "outros" is selected.
+    // If 'none' is selected, it's valid.
+    // If list is not empty (and not just 'outros'), it's valid.
+    // If 'outros' is selected, text must be > 0.
+    final bool hasSelection = data.selectedSupplements.isNotEmpty;
+    final bool isOtherValid =
+        !showOtherTextField || _otherController.text.trim().isNotEmpty;
+    final bool canContinue = hasSelection && isOtherValid;
 
     return Scaffold(
-      // 1. AppBar removido
       appBar: null,
-
-      // 4. Body para a barra de navegação customizada e conteúdo
+      bottomNavigationBar: Padding(
+        padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
+        child: ElevatedButton(
+          onPressed: canContinue ? _onNext : null,
+          child: const Text('Continuar'),
+        ),
+      ),
       body: SafeArea(
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // BARRA DE PROGRESSO E BOTÃO DE VOLTAR (Passo 14/15)
+            // Progress Bar (14/15)
             Padding(
               padding:
                   const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
@@ -79,62 +118,119 @@ class _SupplementsScreenState extends State<SupplementsScreen> {
                   const ProcsBackButton(),
                   const SizedBox(width: 16),
                   const Expanded(
-                    // Progress bar: 14/15
                     child: PremiumProgressBar(progress: 15 / 16),
                   ),
                 ],
               ),
             ),
 
-            // CONTEÚDO ROLÁVEL
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(horizontal: 24.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const SizedBox(height: 32),
-                    // Título (V3)
+                    const SizedBox(height: 16),
                     Text(
-                      "Interesse em suplementação?",
+                      "Você já faz uso de algum suplemento?",
                       style: textTheme.headlineMedium,
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 12),
-                    // Subtítulo (V3)
                     Text(
-                      "O Procs AI pode oferecer sugestões educacionais (sem marcas ou dosagens) para otimizar seus resultados.",
-                      style: theme.textTheme.bodyMedium?.copyWith(
+                      "Selecione o que você já utiliza atualmente.",
+                      style: textTheme.bodyMedium?.copyWith(
                         color:
                             theme.colorScheme.onSurface.withValues(alpha: 0.7),
                       ),
                       textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 48),
+                    const SizedBox(height: 32),
 
-                    // V3: Cards de Seleção (Design Dourado - PremiumSelectionCard)
+                    // Option: None
                     Padding(
-                      padding: const EdgeInsets.only(bottom: 16),
+                      padding: const EdgeInsets.only(bottom: 12),
                       child: PremiumSelectionCard(
-                        text: "Sim, estou aberto(a) a sugestões",
-                        isSelected: selectedInterest == true,
+                        text: "Não utilizo suplementação",
+                        isSelected: data.selectedSupplements.contains('none'),
                         onTap: () {
-                          provider.setInterestInSupplements(true);
-                          _onNext();
+                          HapticService.lightImpact();
+                          provider.toggleSupplement('none');
+                          _otherController.clear();
+                          FocusScope.of(context).unfocus();
                         },
                       ),
                     ),
 
-                    PremiumSelectionCard(
-                      text: "Não, prefiro focar 100% na alimentação",
-                      isSelected: selectedInterest == false,
-                      onTap: () {
-                        provider.setInterestInSupplements(false);
-                        _onNext();
-                      },
+                    // Options List
+                    ..._supplementOptions.entries.map((entry) {
+                      final isSelected =
+                          data.selectedSupplements.contains(entry.key);
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: PremiumSelectionCard(
+                          text: entry.value,
+                          isSelected: isSelected,
+                          onTap: () {
+                            HapticService.lightImpact();
+                            provider.toggleSupplement(entry.key);
+                          },
+                        ),
+                      );
+                    }),
+
+                    // Option: Others
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: Column(
+                        children: [
+                          PremiumSelectionCard(
+                            text: "Outros",
+                            isSelected: showOtherTextField,
+                            onTap: () {
+                              HapticService.lightImpact();
+                              provider.toggleSupplement('outros');
+                              if (!showOtherTextField) {
+                                // Give time for UI expand then focus
+                                Future.delayed(
+                                    const Duration(milliseconds: 100), () {
+                                  _otherFocusNode.requestFocus();
+                                });
+                              }
+                            },
+                          ),
+
+                          // Expanded Text Field
+                          AnimatedCrossFade(
+                            firstChild: const SizedBox.shrink(),
+                            secondChild: Padding(
+                              padding:
+                                  const EdgeInsets.only(top: 12, bottom: 24),
+                              child: TextField(
+                                controller: _otherController,
+                                focusNode: _otherFocusNode,
+                                decoration: InputDecoration(
+                                  labelText: 'Quais? (separados por vírgula)',
+                                  hintText: "Ex: Cafeína, Beta-Alanina, ZMA...",
+                                  hintStyle: TextStyle(
+                                      color: Colors.white.withOpacity(0.3)),
+                                ),
+                                style: textTheme.bodyLarge,
+                                textInputAction: TextInputAction.done,
+                                onSubmitted: (_) =>
+                                    FocusScope.of(context).unfocus(),
+                              ),
+                            ),
+                            crossFadeState: showOtherTextField
+                                ? CrossFadeState.showSecond
+                                : CrossFadeState.showFirst,
+                            duration: const Duration(milliseconds: 300),
+                          ),
+                        ],
+                      ),
                     ),
 
-                    const SizedBox(height: 96),
+                    const SizedBox(height: 64),
                   ],
                 ),
               ),

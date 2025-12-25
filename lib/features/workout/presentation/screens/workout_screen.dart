@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import '../widgets/exercise_card.dart';
+import 'package:provider/provider.dart'; // Import Provider
+import '../../../../core/providers/user_data_provider.dart'; // Import UserDataProvider
+import 'package:flutter_markdown/flutter_markdown.dart'; // Import Markdown
 
 class WorkoutScreen extends StatefulWidget {
   const WorkoutScreen({super.key});
@@ -24,6 +26,46 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    // V3.5: Listen to User Data
+    final userDataProvider = context.watch<UserDataProvider>();
+
+    if (userDataProvider.isLoading) {
+      return Scaffold(
+        backgroundColor: theme.scaffoldBackgroundColor,
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    // Se não tiver plano ainda (e não estiver carregando, significa que ainda não chegou do Firestore)
+    // Mostramos estado de "Gerando..."
+    if (!userDataProvider.hasTrainingPlan) {
+      return Scaffold(
+        backgroundColor: theme.scaffoldBackgroundColor,
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const CircularProgressIndicator(),
+              const SizedBox(height: 24),
+              Text(
+                "A IA está personalizando seu plano...",
+                style: theme.textTheme.titleMedium?.copyWith(
+                  color: Colors.white70,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                "Isso pode levar alguns segundos.",
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: Colors.white38,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     final colorScheme = theme.colorScheme;
 
     return Scaffold(
@@ -133,28 +175,40 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                   const SizedBox(height: 32), // Respiro visual
 
                   // BLOCO 3: Lista de Exercícios (Mock)
-                  const ExerciseCard(
-                    name: "Supino Reto com Barra",
-                    setsReps: "4 séries | 8–10 repetições",
-                    rest: "90s",
-                    load: "20kg (cada lado)",
+                  // BLOCO 3: Plano Gerado pela IA (Markdown)
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1A1A1A),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.white10),
+                    ),
+                    child: MarkdownBody(
+                      data: userDataProvider.trainingPlan ??
+                          "Erro ao carregar plano.",
+                      styleSheet: MarkdownStyleSheet(
+                        p: const TextStyle(color: Colors.white70, fontSize: 14),
+                        h1: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold),
+                        h2: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold),
+                        h3: TextStyle(
+                            color:
+                                Theme.of(context).primaryColor, // Gold/Primary
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold),
+                        strong: const TextStyle(
+                            color: Colors.white, fontWeight: FontWeight.bold),
+                        listBullet: const TextStyle(color: Colors.white70),
+                      ),
+                    ),
                   ),
-                  const ExerciseCard(
-                    name: "Desenvolvimento Halteres",
-                    setsReps: "3 séries | 12 repetições",
-                    rest: "60s",
-                    load: "16kg",
-                  ),
-                  const ExerciseCard(
-                    name: "Tríceps Corda",
-                    setsReps: "4 séries | 15 repetições",
-                    rest: "45s",
-                  ),
-                  const ExerciseCard(
-                    name: "Elevação Lateral",
-                    setsReps: "3 séries | 15-20 repetições",
-                    rest: "45s",
-                  ),
+
+                  const SizedBox(height: 32),
 
                   const SizedBox(height: 32),
 

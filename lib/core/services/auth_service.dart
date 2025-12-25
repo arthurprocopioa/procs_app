@@ -73,6 +73,31 @@ class AuthServiceV3 {
     }
   }
 
+  /// V3: Vincula a conta atual (Anônima) ao Google.
+  Future<UserCredential?> linkWithGoogle() async {
+    try {
+      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      if (googleUser == null) return null;
+
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
+
+      final OAuthCredential credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+
+      final user = _firebaseAuth.currentUser;
+      if (user != null) {
+        return await user.linkWithCredential(credential);
+      }
+      return null;
+    } catch (e) {
+      debugPrint('[AuthServiceV3] Erro ao vincular: $e');
+      rethrow; // Repassa para tratar na UI (Ex: Credential already in use)
+    }
+  }
+
   // TODO (Feature 2): Adicionar signInWithApple() aqui.
 
   /// Helper de logout para testes.

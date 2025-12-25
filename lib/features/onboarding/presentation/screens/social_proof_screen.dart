@@ -6,6 +6,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../../../../core/services/analytics_service.dart';
 import '../../../../core/services/haptic_service.dart';
 import 'checkout_screen.dart';
+import '../../../../core/widgets/gravity_background.dart';
 
 class SocialProofScreen extends StatefulWidget {
   const SocialProofScreen({super.key});
@@ -38,8 +39,9 @@ class _SocialProofScreenState extends State<SocialProofScreen> {
     final textTheme = theme.textTheme;
 
     return Scaffold(
-      backgroundColor: Colors.black,
-      body: SafeArea(
+      // backgroundColor: Colors.black,
+      body: GravityBackground(
+        child: SafeArea(
         child: Column(
           children: [
             Expanded(
@@ -174,6 +176,7 @@ class _SocialProofScreenState extends State<SocialProofScreen> {
             ).animate().fade(delay: 1000.ms).moveY(begin: 20),
           ],
         ),
+      ),
       ),
     );
   }
