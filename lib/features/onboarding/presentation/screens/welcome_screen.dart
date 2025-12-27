@@ -11,7 +11,7 @@ import '../../../../core/services/firestore_service.dart'; // FirestoreService
 import 'package:cloud_firestore/cloud_firestore.dart'; // Firestore
 import '../../../../core/providers/user_data_provider.dart'; // Import UserDataProvider
 import 'terms_screen.dart';
-import '../../../../core/widgets/gravity_background.dart';
+// import '../../../../core/widgets/gravity_background.dart';
 
 class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({super.key});
@@ -95,9 +95,8 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
 
     return Scaffold(
       // CRÍTICA 1: Força o fundo preto puro para mesclar com a imagem.
-      // backgroundColor: Colors.black,
-      body: GravityBackground(
-        child: SafeArea(
+      backgroundColor: Colors.black,
+      body: SafeArea(
         bottom: false, // Permite que os botões fiquem na borda inferior
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24.0),
@@ -166,7 +165,6 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
               const SizedBox(height: 32),
             ],
           ),
-        ),
         ),
       ),
     );

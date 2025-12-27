@@ -63,6 +63,14 @@ class OnboardingDataModel {
   final Set<String> selectedSupplements; // NOVO
   final String? otherSupplements; // NOVO
 
+  // NOVO: Localização Automática
+  final String? detectedCountry;
+  final String? detectedState;
+  final String? detectedCity;
+
+  // NOVO: Body Scan
+  final String? bodyScanImagePath;
+
   final String? phoneNumber;
   final String? selectedPlan;
 
@@ -117,6 +125,10 @@ class OnboardingDataModel {
     this.isPremium = false, // Default to false (Free)
     this.selectedSupplements = const <String>{}, // NOVO
     this.otherSupplements, // NOVO
+    this.detectedCountry, // NOVO
+    this.detectedState, // NOVO
+    this.detectedCity, // NOVO
+    this.bodyScanImagePath, // NOVO
   });
 
   OnboardingDataModel copyWith({
@@ -166,6 +178,10 @@ class OnboardingDataModel {
     Set<String>? selectedSupplements, // NOVO
     String? otherSupplements, // NOVO
     String? currentPhysique, // NOVO: Físico Atual
+    String? detectedCountry,
+    String? detectedState,
+    String? detectedCity,
+    String? bodyScanImagePath,
   }) {
     return OnboardingDataModel(
       name: name ?? this.name,
@@ -223,6 +239,10 @@ class OnboardingDataModel {
       selectedSupplements:
           selectedSupplements ?? this.selectedSupplements, // NOVO
       otherSupplements: otherSupplements ?? this.otherSupplements, // NOVO
+      detectedCountry: detectedCountry ?? this.detectedCountry,
+      detectedState: detectedState ?? this.detectedState,
+      detectedCity: detectedCity ?? this.detectedCity,
+      bodyScanImagePath: bodyScanImagePath ?? this.bodyScanImagePath,
     );
   }
 }

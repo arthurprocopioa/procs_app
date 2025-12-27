@@ -7,7 +7,7 @@ import '../../../../core/services/analytics_service.dart';
 import '../../../../core/services/haptic_service.dart';
 import '../../application/onboarding_provider.dart';
 import '../widgets/premium_progress_bar.dart';
-import 'current_physique_screen.dart';
+import 'body_scan_screen.dart';
 import '../widgets/premium_selection_card.dart';
 import '../widgets/procs_back_button.dart';
 
@@ -31,7 +31,7 @@ class _VitalDataScreenState extends State<VitalDataScreen> {
   void _navigateToNext() {
     HapticService.mediumImpact();
     Navigator.of(context).push(
-      MaterialPageRoute(builder: (context) => const CurrentPhysiqueScreen()),
+      MaterialPageRoute(builder: (context) => const BodyScanScreen()),
     );
   }
 

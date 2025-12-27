@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../widgets/staged_progress_indicator.dart';
-import '../../../../core/widgets/gravity_background.dart';
+// import '../../../../core/widgets/gravity_background.dart';
 
 class BaseLoadingScreen extends StatefulWidget {
   final String title;
@@ -51,58 +51,56 @@ class _BaseLoadingScreenState extends State<BaseLoadingScreen> {
     final textTheme = theme.textTheme;
 
     return Scaffold(
-      // backgroundColor: Colors.black, // Removido pois GravityBackground gerencia o fundo
-      body: GravityBackground(
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(32.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // Título Principal
-                Text(
-                  widget.title,
-                  style: textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
+      backgroundColor: Colors.black,
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Título Principal
+              Text(
+                widget.title,
+                style: textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 40),
+
+              // Novo Indicador de Progresso com Estágios
+              StagedProgressIndicator(
+                duration: widget.totalDuration,
+                color: theme.colorScheme.primary,
+                onComplete: widget.onComplete,
+                stops: widget.stops,
+              ),
+              const SizedBox(height: 40),
+
+              // Texto "Carregando..."
+              Text(
+                "Carregando...",
+                style: textTheme.titleMedium?.copyWith(
+                  color: Colors.white70,
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Frases que mudam com animação suave
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 500),
+                child: Text(
+                  widget.messages[_currentMessageIndex],
+                  key: ValueKey<int>(_currentMessageIndex),
+                  style: textTheme.bodyLarge?.copyWith(
                     color: Colors.white,
+                    fontStyle: FontStyle.italic,
                   ),
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 40),
-
-                // Novo Indicador de Progresso com Estágios
-                StagedProgressIndicator(
-                  duration: widget.totalDuration,
-                  color: theme.colorScheme.primary,
-                  onComplete: widget.onComplete,
-                  stops: widget.stops,
-                ),
-                const SizedBox(height: 40),
-
-                // Texto "Carregando..."
-                Text(
-                  "Carregando...",
-                  style: textTheme.titleMedium?.copyWith(
-                    color: Colors.white70,
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // Frases que mudam com animação suave
-                AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 500),
-                  child: Text(
-                    widget.messages[_currentMessageIndex],
-                    key: ValueKey<int>(_currentMessageIndex),
-                    style: textTheme.bodyLarge?.copyWith(
-                      color: Colors.white,
-                      fontStyle: FontStyle.italic,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),

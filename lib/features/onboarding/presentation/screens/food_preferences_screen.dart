@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'supplements_screen.dart'; // Próxima tela (1.15/15)
+import 'loading_diet_plan_screen.dart';
 // ---
 // IMPORTS V3 (Fundação)
 // ---
@@ -9,7 +9,6 @@ import '../../../../core/services/haptic_service.dart';
 import '../../application/onboarding_provider.dart';
 // V3 (NOVOS IMPORTS): Widgets reutilizáveis
 import '../widgets/premium_progress_bar.dart';
-import '../widgets/premium_selection_card.dart';
 import '../widgets/procs_back_button.dart';
 
 /// Tela 1.16: O usuário informa o que NÃO gosta de comer (Passo 14/15).
@@ -99,7 +98,8 @@ class _FoodPreferencesScreenState extends State<FoodPreferencesScreen> {
     final provider = context.read<OnboardingProvider>();
     provider.setFoodDislikes(_dislikedFoods);
 
-    context.read<AnalyticsService>().trackEvent(
+    final analytics = context.read<AnalyticsService>();
+    analytics.trackEvent(
       'onboarding_food_dislikes_set',
       parameters: {
         'dislikes_count': _dislikedFoods.length,
@@ -108,11 +108,7 @@ class _FoodPreferencesScreenState extends State<FoodPreferencesScreen> {
       },
     );
 
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => const SupplementsScreen(),
-      ),
-    );
+    _finishOnboarding(context, provider, analytics);
   }
 
   /// Ação de 'Como de tudo' (Sem restrições)
@@ -123,7 +119,8 @@ class _FoodPreferencesScreenState extends State<FoodPreferencesScreen> {
     final provider = context.read<OnboardingProvider>();
     provider.setEatsEverything();
 
-    context.read<AnalyticsService>().trackEvent(
+    final analytics = context.read<AnalyticsService>();
+    analytics.trackEvent(
       'onboarding_food_dislikes_set',
       parameters: {
         'dislikes_count': 0,
@@ -132,9 +129,25 @@ class _FoodPreferencesScreenState extends State<FoodPreferencesScreen> {
       },
     );
 
+    _finishOnboarding(context, provider, analytics);
+  }
+
+  void _finishOnboarding(BuildContext context, OnboardingProvider provider,
+      AnalyticsService analytics) {
+    // Check if region was auto-detected and log it
+    if (provider.data.userRegion != null) {
+      analytics.trackEvent(
+        'onboarding_region_set',
+        parameters: {
+          'region': provider.data.userRegion!,
+          'auto_detected': true,
+        },
+      );
+    }
+
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => const SupplementsScreen(),
+        builder: (context) => const LoadingDietPlanScreen(),
       ),
     );
   }

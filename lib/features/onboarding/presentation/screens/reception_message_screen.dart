@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import '../../application/onboarding_provider.dart';
 import 'vital_data_screen.dart'; // Próxima tela
 import '../../../../core/services/haptic_service.dart'; // Haptics
-import '../../../../core/widgets/gravity_background.dart';
+// import '../../../../core/widgets/gravity_background.dart';
 
 class ReceptionMessageScreen extends StatefulWidget {
   const ReceptionMessageScreen({super.key});
@@ -161,94 +161,92 @@ class _ReceptionMessageScreenState extends State<ReceptionMessageScreen>
     );
 
     return Scaffold(
-      // backgroundColor: Colors.black, // Fundo preto imersivo
-      body: GravityBackground(
-        child: Stack(
-          children: [
-            // CONTENT
-            SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 32.0),
-                child: Column(
-                  mainAxisAlignment:
-                      MainAxisAlignment.center, // Centraliza verticalmente
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // Espaço flexível superior
-                    const Spacer(flex: 2),
+      backgroundColor: Colors.black, // Fundo preto imersivo
+      body: Stack(
+        children: [
+          // CONTENT
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 32.0),
+              child: Column(
+                mainAxisAlignment:
+                    MainAxisAlignment.center, // Centraliza verticalmente
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Espaço flexível superior
+                  const Spacer(flex: 2),
 
-                    // O TEXTO ANIMADO
-                    AnimatedOpacity(
-                      opacity: _textOpacity,
-                      duration: _fadeDuration,
-                      child: SizedBox(
-                        height: 200, // Altura fixa para evitar pulos
-                        child: Center(
-                          child: RichText(
-                            textAlign: TextAlign.center,
-                            text: TextSpan(
-                              children: [
-                                TextSpan(
-                                  text: _displayedText,
-                                  style: messageStyle,
-                                ),
-                                // CORREÇÃO DO BUG DO MARGIN NEGATIVO
-                                if (_isTyping && _textOpacity > 0)
-                                  WidgetSpan(
-                                    alignment: PlaceholderAlignment.middle,
-                                    child: Transform.translate(
-                                      offset: const Offset(
-                                          2, 0), // Ajuste de posição seguro
-                                      child: FadeTransition(
-                                        opacity: _cursorController,
-                                        child: Container(
-                                          width: 2,
-                                          height: 24,
-                                          color: theme.colorScheme
-                                              .primary, // Cursor Dourado
-                                        ),
+                  // O TEXTO ANIMADO
+                  AnimatedOpacity(
+                    opacity: _textOpacity,
+                    duration: _fadeDuration,
+                    child: SizedBox(
+                      height: 200, // Altura fixa para evitar pulos
+                      child: Center(
+                        child: RichText(
+                          textAlign: TextAlign.center,
+                          text: TextSpan(
+                            children: [
+                              TextSpan(
+                                text: _displayedText,
+                                style: messageStyle,
+                              ),
+                              // CORREÇÃO DO BUG DO MARGIN NEGATIVO
+                              if (_isTyping && _textOpacity > 0)
+                                WidgetSpan(
+                                  alignment: PlaceholderAlignment.middle,
+                                  child: Transform.translate(
+                                    offset: const Offset(
+                                        2, 0), // Ajuste de posição seguro
+                                    child: FadeTransition(
+                                      opacity: _cursorController,
+                                      child: Container(
+                                        width: 2,
+                                        height: 24,
+                                        color: theme.colorScheme
+                                            .primary, // Cursor Dourado
                                       ),
                                     ),
                                   ),
-                              ],
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  const Spacer(flex: 2),
+
+                  // BOTÃO "COMEÇAR EVOLUÇÃO"
+                  AnimatedOpacity(
+                    opacity: _showButton ? 1.0 : 0.0,
+                    duration: const Duration(milliseconds: 800),
+                    child: IgnorePointer(
+                      ignoring: !_showButton,
+                      child: Padding(
+                        padding: const EdgeInsets.only(bottom: 40.0),
+                        // CORREÇÃO DO BOTÃO:
+                        // Removida estilização customizada para usar o padrão do AppTheme
+                        // (Fundo Branco, Texto Preto, Largura Total)
+                        child: ElevatedButton(
+                          onPressed: _onNext,
+                          child: const Text(
+                            "COMEÇAR EVOLUÇÃO",
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 1.0,
                             ),
                           ),
                         ),
                       ),
                     ),
-
-                    const Spacer(flex: 2),
-
-                    // BOTÃO "COMEÇAR EVOLUÇÃO"
-                    AnimatedOpacity(
-                      opacity: _showButton ? 1.0 : 0.0,
-                      duration: const Duration(milliseconds: 800),
-                      child: IgnorePointer(
-                        ignoring: !_showButton,
-                        child: Padding(
-                          padding: const EdgeInsets.only(bottom: 40.0),
-                          // CORREÇÃO DO BOTÃO:
-                          // Removida estilização customizada para usar o padrão do AppTheme
-                          // (Fundo Branco, Texto Preto, Largura Total)
-                          child: ElevatedButton(
-                            onPressed: _onNext,
-                            child: const Text(
-                              "COMEÇAR EVOLUÇÃO",
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 1.0,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

@@ -9,7 +9,7 @@ import 'core/services/analytics_service.dart';
 import 'core/theme/app_theme.dart';
 import 'features/onboarding/application/onboarding_provider.dart';
 import 'core/providers/user_data_provider.dart';
-import 'features/onboarding/presentation/screens/welcome_screen.dart'; // Tela de Login/Inicio
+import 'features/onboarding/presentation/screens/body_scan_screen.dart'; // Tela de Login/Inicio
 import 'features/home/presentation/main_wrapper.dart'; // Tela Principal
 import 'features/onboarding/presentation/screens/terms_screen.dart'; // Inicio Onboarding
 
@@ -88,10 +88,10 @@ class MyApp extends StatelessWidget {
         routes: {
           '/home': (context) => const MainWrapper(),
           '/onboarding': (context) => const TermsScreen(),
-          '/login': (context) => const WelcomeScreen(),
+          '/login': (context) => const BodyScanScreen(),
         },
         // Entrada padrão (Guest First)
-        home: const WelcomeScreen(),
+        home: const BodyScanScreen(),
       ),
     );
   }

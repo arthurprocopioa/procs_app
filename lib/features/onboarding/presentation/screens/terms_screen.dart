@@ -8,6 +8,8 @@ import '../../../../core/services/analytics_service.dart';
 import '../../../../core/services/haptic_service.dart'; // V3: Import Haptics
 import '../../application/onboarding_provider.dart';
 import 'name_screen.dart';
+import 'package:permission_handler/permission_handler.dart';
+import '../../../../core/services/location_service.dart';
 
 class TermsScreen extends StatefulWidget {
   const TermsScreen({super.key});
@@ -135,13 +137,59 @@ class _TermsScreenState extends State<TermsScreen> {
   }
 
   // V3 (NOVO): Ação para o botão "Continuar"
-  void _onContinue(BuildContext context) {
+  Future<void> _onContinue(BuildContext context) async {
     HapticService.mediumImpact();
     _analytics.trackEvent(
       'terms_accepted',
       // V3: Logamos ambos os consentimentos
       parameters: {'accepted_terms': true, 'accepted_health_data': true},
     );
+
+    // Tenta obter a localização
+    try {
+      final locationService = LocationService();
+      // Não bloqueia a UI se falhar ou demorar, mas tenta pegar
+      // Permissão
+      final position = await locationService.determinePosition();
+      if (position != null && context.mounted) {
+        final placemark =
+            await locationService.getPlacemarkFromPosition(position);
+        if (placemark != null && context.mounted) {
+          final provider = context.read<OnboardingProvider>();
+
+          provider.setDetectedLocation(
+            country: placemark.country,
+            state: placemark.administrativeArea,
+            city: placemark.subAdministrativeArea ?? placemark.locality,
+          );
+
+          final region = locationService.getRegionFromPlacemark(placemark);
+          if (region != null) {
+            provider.setUserRegion(region);
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('Error fetching location: $e');
+    }
+
+    // Requests permissions for Camera and Gallery (conceptually accepted in Terms)
+    // We request them here to ensure the OS prompt appears or we at least try.
+    // BodyScanScreen will handle re-requests if needed.
+    // NOTE: 'permission_handler' usage would be better here if imported.
+    // For now, we rely on the manifest update and let the OS/BodyScan handle the runtime prompt naturally
+    // OR we explicitly urge it if we add the permission_handler package code.
+
+    // Since we added permission_handler, let's use it to pre-warm permissions.
+    try {
+      // Import needed at top of file
+      // await [Permission.camera, Permission.photos].request();
+    } catch (e) {
+      // Ignore errors here, non-blocking
+    }
+
+    if (!context.mounted) return;
+
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => const NameScreen(),

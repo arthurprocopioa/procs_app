@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 // import '../../application/onboarding_provider.dart';
 import 'diet_restrictions_screen.dart'; // Próxima tela (ajustar conforme fluxo real)
 import '../../../../core/services/haptic_service.dart';
-import '../../../../core/widgets/gravity_background.dart';
+// import '../../../../core/widgets/gravity_background.dart';
 
 class TrainingPlanReadyMessageScreen extends StatefulWidget {
   const TrainingPlanReadyMessageScreen({super.key});
@@ -140,9 +140,8 @@ class _TrainingPlanReadyMessageScreenState
     );
 
     return Scaffold(
-      // backgroundColor: Colors.black, // Removido pois GravityBackground gerencia o fundo
-      body: GravityBackground(
-        child: SafeArea(
+      backgroundColor: Colors.black,
+      body: SafeArea(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 32.0),
             child: Column(
@@ -210,7 +209,6 @@ class _TrainingPlanReadyMessageScreenState
             ),
           ),
         ),
-      ),
     );
   }
 }

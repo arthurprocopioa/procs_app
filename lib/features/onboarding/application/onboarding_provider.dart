@@ -329,6 +329,26 @@ class OnboardingProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  // NOVO: Localização Automática
+  void setDetectedLocation({
+    required String? country,
+    required String? state,
+    required String? city,
+  }) {
+    _data = _data.copyWith(
+      detectedCountry: country,
+      detectedState: state,
+      detectedCity: city,
+    );
+    notifyListeners();
+  }
+
+  // NOVO: Body Scan
+  void setBodyScanImage(String? path) {
+    _data = _data.copyWith(bodyScanImagePath: path);
+    notifyListeners();
+  }
+
   // NOVO: Gestão de Suplementos
   void toggleSupplement(String key) {
     final newSupplements = Set<String>.from(_data.selectedSupplements);
